@@ -153,6 +153,15 @@ a:hover {
     align-items: center;
     justify-content: center;
     gap: 12px;
+    margin-bottom: 10px;
+}
+
+.footer-disclaimer {
+    max-width: 540px;
+    margin: 0 auto;
+    line-height: 1.5;
+    font-size: 11px;
+    opacity: 0.85;
 }
 
 .footer-inner p {

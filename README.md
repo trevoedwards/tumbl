@@ -145,4 +145,6 @@ Issues and pull requests are welcome. For larger changes, open an issue first to
 
 ## Acknowledgements
 
-Export format research informed by [TEV](https://github.com/tiyb/tev) and [tumblr-utils](https://github.com/bbolli/tumblr-utils). Not affiliated with Tumblr or Automattic.
+Export format research informed by [TEV](https://github.com/tiyb/tev) and [tumblr-utils](https://github.com/bbolli/tumblr-utils).
+
+**Disclaimer:** tumbl is an independent project and is not affiliated with, endorsed by, or sponsored by Tumblr, Yahoo!, or Automattic. Tumblr and related marks are trademarks of their respective owners.
