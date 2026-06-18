@@ -34,6 +34,7 @@ from app.index_progress import (
 )
 from app.open_graph import preview_description, preview_image_url
 from app.parser import PostMeta, get_or_build_index
+from app.post_metadata import local_post_id_from_url
 from app.post_filters import VALID_POST_TYPES, apply_filters
 from app.security import (
     PUBLIC_INDEX_ERROR,
@@ -53,6 +54,7 @@ GITHUB_REPO_URL = "https://github.com/trevoedwards/tumbl"
 logger = logging.getLogger(__name__)
 _index_lock = threading.Lock()
 _posts_index: list[PostMeta] | None = None
+_post_ids: set[str] | None = None
 _index_error: str | None = None
 
 
@@ -82,7 +84,7 @@ def _load_dotenv() -> None:
 
 def warm_index(archive_path: Path, cache_path: Path) -> None:
     """Build or load the post index. Safe to call from a background thread."""
-    global _posts_index, _index_error
+    global _posts_index, _index_error, _post_ids
     try:
         if not archive_path.is_dir():
             raise FileNotFoundError(f"Archive directory not found: {archive_path}")
@@ -95,6 +97,7 @@ def warm_index(archive_path: Path, cache_path: Path) -> None:
         )
         with _index_lock:
             _posts_index = posts
+            _post_ids = {post.id for post in posts}
         mark_complete()
         logger.info("Archive ready with %s posts", len(posts))
     except Exception as exc:  # noqa: BLE001 - surface startup errors in UI
@@ -422,6 +425,11 @@ def create_app() -> Flask:
         post = next((item for item in posts if item.id == post_id), None)
         if not post:
             abort(404)
+        post_index = next(i for i, item in enumerate(posts) if item.id == post_id)
+        prev_post_id = posts[post_index - 1].id if post_index > 0 else None
+        next_post_id = (
+            posts[post_index + 1].id if post_index < len(posts) - 1 else None
+        )
         share_url = url_for("single_post", post_id=post.id, _external=True)
         page_title = post.timestamp or f"Post {post.id}"
         og_image = preview_image_url(
@@ -438,6 +446,8 @@ def create_app() -> Flask:
             page_title=page_title,
             og_image=og_image,
             og_description=og_description,
+            prev_post_id=prev_post_id,
+            next_post_id=next_post_id,
         )
 
     @app.route("/random")
@@ -505,6 +515,15 @@ def create_app() -> Flask:
     @app.template_filter("tag_url")
     def tag_url_filter(tag: str) -> str:
         return url_for("tag_feed", tag=tag)
+
+    @app.template_filter("archive_post_url")
+    def archive_post_url_filter(external_url: str) -> str:
+        if not external_url:
+            return ""
+        local_id = local_post_id_from_url(external_url)
+        if local_id and _post_ids and local_id in _post_ids:
+            return url_for("single_post", post_id=local_id)
+        return external_url
 
     @app.template_filter("month_name")
     def month_name_filter(month: int) -> str:

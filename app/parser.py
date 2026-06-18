@@ -24,6 +24,8 @@ from app.parsers.tumblr_utils import build_index as build_tumblr_utils_index
 
 logger = logging.getLogger(__name__)
 
+CACHE_SCHEMA_VERSION = 2
+
 _BUILDERS = {
     ArchiveFormat.LEGACY_HTML: build_legacy_index,
     ArchiveFormat.MODERN_XML: build_modern_index,
@@ -74,6 +76,9 @@ def load_cached_index(
                 expected,
             )
             return None
+        if meta.get("schema_version", 1) != CACHE_SCHEMA_VERSION:
+            logger.info("Index cache schema mismatch; rebuilding")
+            return None
 
         data = json.loads(path.read_text(encoding="utf-8"))
         posts = [PostMeta.from_dict(item) for item in data]
@@ -96,7 +101,12 @@ def save_index_cache(
     payload = [post.to_dict() for post in posts]
     temp_path.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
     temp_meta_path.write_text(
-        json.dumps({"fingerprint": archive_fingerprint(archive_root, fmt)}),
+        json.dumps(
+            {
+                "fingerprint": archive_fingerprint(archive_root, fmt),
+                "schema_version": CACHE_SCHEMA_VERSION,
+            }
+        ),
         encoding="utf-8",
     )
     temp_path.replace(path)

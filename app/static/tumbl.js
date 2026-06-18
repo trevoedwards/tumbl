@@ -600,6 +600,89 @@
         });
     }
 
+    function initKeyboardShortcuts() {
+        var hints = document.getElementById("keyboard-hints");
+
+        function toggleHints() {
+            if (!hints) {
+                return;
+            }
+            hints.hidden = !hints.hidden;
+        }
+
+        function isEditableTarget(target) {
+            if (!target) {
+                return false;
+            }
+            var tag = target.tagName || "";
+            return (
+                target.isContentEditable ||
+                tag === "INPUT" ||
+                tag === "TEXTAREA" ||
+                tag === "SELECT"
+            );
+        }
+
+        function navigateFeedPosts(direction) {
+            var posts = Array.prototype.slice.call(document.querySelectorAll("article.post"));
+            if (!posts.length) {
+                return;
+            }
+            var marker = window.scrollY + 120;
+            var current = 0;
+            for (var i = 0; i < posts.length; i++) {
+                if (posts[i].offsetTop <= marker) {
+                    current = i;
+                }
+            }
+            var target = posts[current + direction];
+            if (target) {
+                target.scrollIntoView({ behavior: "smooth", block: "start" });
+            }
+        }
+
+        function navigateSinglePost(direction) {
+            var section = document.querySelector(".single-post-view");
+            if (!section) {
+                return false;
+            }
+            var targetId =
+                direction > 0
+                    ? section.dataset.nextPostId
+                    : section.dataset.prevPostId;
+            if (targetId) {
+                window.location.href = "/post/" + targetId;
+                return true;
+            }
+            return false;
+        }
+
+        document.addEventListener("keydown", function (event) {
+            if (isEditableTarget(event.target)) {
+                return;
+            }
+            if (event.key === "/" && !event.metaKey && !event.ctrlKey && !event.altKey) {
+                var search = document.querySelector(".header-search-input");
+                if (search) {
+                    event.preventDefault();
+                    search.focus();
+                }
+                return;
+            }
+            if (event.key === "?" || (event.shiftKey && event.key === "/")) {
+                event.preventDefault();
+                toggleHints();
+                return;
+            }
+            if (event.key === "j" || event.key === "k") {
+                var direction = event.key === "j" ? 1 : -1;
+                if (!navigateSinglePost(direction)) {
+                    navigateFeedPosts(direction);
+                }
+            }
+        });
+    }
+
     function initLoadingPage() {
         var statusEl = document.getElementById("loading-status");
         if (!statusEl) {
@@ -672,11 +755,13 @@
         initSettingsPage: initSettingsPage,
         initFeedPage: initFeedPage,
         initLoadingPage: initLoadingPage,
+        initKeyboardShortcuts: initKeyboardShortcuts,
         initPhotoLightbox: initPhotoLightbox,
     };
 
     initGlobalAppearance();
     initCopyLinkButtons();
     initPhotoLightbox();
+    initKeyboardShortcuts();
     document.addEventListener("DOMContentLoaded", initPage);
 })();

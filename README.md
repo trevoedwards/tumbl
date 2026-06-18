@@ -18,8 +18,10 @@ No account required, no data sent anywhere.
 ## Features
 
 - Paginated feed, full-text search, tag cloud, and date archive
-- Post type filters (photo, audio, video, text), photo lightbox, and **Random** post
-- Permalink pages with Open Graph previews for sharing
+- Post type filters (photo, audio, video, text), photo lightbox, and **Random** post (`/random`)
+- Permalink pages with Open Graph previews (`og:image`, `og:site_name`) for sharing
+- Keyboard shortcuts: **`/`** search, **`j`/`k`** navigate posts, **`?`** show hints
+- **View on Tumblr** links and reblog context when export metadata includes them
 - Legacy, modern, and tumblr-utils export formats
 - Auto-extract `posts.zip`, background indexing with progress, persistent cache
 - Docker-first, fully offline
@@ -44,7 +46,7 @@ Directory layouts, extraction notes, and format-specific behavior are documented
 3. **Run** — `docker compose up --build`
 4. **Open** — [http://localhost:8862](http://localhost:8862)
 
-First launch indexes posts in the background (often 20–30 seconds for a few thousand posts). Later starts load from cache in under a second.
+First launch indexes posts in the background (often 20–30 seconds for a few thousand posts; large archives may take a few minutes). Later starts load from cache in under a second. See **[Performance](docs/performance.md)** for tuning large exports (~5 GB+).
 
 ## Configuration
 
@@ -100,7 +102,7 @@ python -m flask --app app.main run --debug
 ```
 tumbl/
 ├── app/                  # Flask app, parsers, static assets, templates
-├── docs/                 # export-formats.md, security.md, demo.gif
+├── docs/                 # export-formats.md, security.md, performance.md, demo.gif
 ├── tests/
 ├── docker-compose.yml
 ├── Dockerfile
@@ -131,6 +133,7 @@ HTML sanitization, zip guards, path validation, and security headers are documen
 - [ ] Messaging / conversations viewer (`messages.xml`)
 - [x] Open Graph images on permalink pages
 - [x] Random post (`/random`)
+- [x] Keyboard shortcuts, Tumblr/reblog links, lazy-loaded images
 - [x] Full-text search, tag cloud, date archive
 - [x] tumblr-utils support, auto-extract `posts.zip`, photo lightbox
 - [x] Post type filters, async indexing, theme customization

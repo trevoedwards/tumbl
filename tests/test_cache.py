@@ -68,6 +68,7 @@ class CacheInvalidationTests(unittest.TestCase):
         fmt = ArchiveFormat.MODERN_XML
         meta = json.loads(cache_meta_path(self.cache_root, fmt).read_text(encoding="utf-8"))
         self.assertEqual(meta["fingerprint"], archive_fingerprint(self.archive_root, fmt))
+        self.assertEqual(meta["schema_version"], 2)
         self.assertTrue(cache_path(self.cache_root, fmt).is_file())
 
     def test_legacy_fingerprint_detects_edit_to_non_newest_file(self) -> None:

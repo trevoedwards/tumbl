@@ -6,6 +6,7 @@
 <link rel="canonical" href="{{ share_url }}">
 <meta property="og:url" content="{{ share_url }}">
 <meta property="og:title" content="{{ page_title }} | {{ blog_title }}">
+<meta property="og:site_name" content="{{ blog_title }}">
 <meta property="og:type" content="article">
 {% if og_description %}
 <meta property="og:description" content="{{ og_description }}">
@@ -23,7 +24,11 @@
 {% block content %}
 <p class="back-link-wrap"><a class="back-link" href="{{ url_for('feed') }}">&larr; Back to blog</a></p>
 
-<section class="post-feed single-post-view">
+<section
+    class="post-feed single-post-view"
+    data-prev-post-id="{{ prev_post_id or '' }}"
+    data-next-post-id="{{ next_post_id or '' }}"
+>
     {% include "post_card.html" %}
 </section>
 {% endblock %}

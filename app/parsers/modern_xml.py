@@ -10,6 +10,7 @@ from collections.abc import Callable
 from pathlib import Path
 
 from app.parsers.base import PostMeta, PostType, sort_posts
+from app.post_metadata import extract_from_xml_post, merge_metadata
 
 logger = logging.getLogger(__name__)
 
@@ -244,6 +245,13 @@ def parse_posts_xml(archive_root: Path, *, max_bytes: int = 512 * 1024 * 1024) -
         tags = [tag.text.strip() for tag in post_el.findall("tag") if tag.text]
         body_html = _render_post_body(post_el, post_id, media_dir)
         xml_type = post_el.get("type", "regular")
+        xml_url, xml_parent_url, xml_parent_name = extract_from_xml_post(post_el)
+        tumblr_url, reblog_parent_url, reblog_parent_name = merge_metadata(
+            tumblr_url=xml_url,
+            reblog_parent_url=xml_parent_url,
+            reblog_parent_name=xml_parent_name,
+            body_html=body_html,
+        )
 
         posts.append(
             PostMeta(
@@ -253,6 +261,9 @@ def parse_posts_xml(archive_root: Path, *, max_bytes: int = 512 * 1024 * 1024) -
                 tags=tags,
                 post_type=_xml_type_to_post_type(xml_type, body_html),
                 is_submission=False,
+                tumblr_url=tumblr_url,
+                reblog_parent_url=reblog_parent_url,
+                reblog_parent_name=reblog_parent_name,
             )
         )
 

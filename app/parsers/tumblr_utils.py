@@ -12,6 +12,7 @@ from pathlib import Path
 from bs4 import BeautifulSoup
 
 from app.parsers.base import PostMeta, PostType, sort_posts
+from app.post_metadata import merge_metadata
 from app.parsers.legacy_html import (
     IMG_TAG_RE,
     _infer_post_type,
@@ -73,6 +74,8 @@ def parse_post_file(path: Path, archive_root: Path) -> PostMeta | None:
     if not IMG_TAG_RE.search(body_html) and article and article.get("data-type") == "photo":
         post_type = "photo"
 
+    tumblr_url, reblog_parent_url, reblog_parent_name = merge_metadata(body_html=body_html)
+
     return PostMeta(
         id=path.stem,
         body_html=body_html,
@@ -80,6 +83,9 @@ def parse_post_file(path: Path, archive_root: Path) -> PostMeta | None:
         tags=tags,
         post_type=post_type,
         is_submission=False,
+        tumblr_url=tumblr_url,
+        reblog_parent_url=reblog_parent_url,
+        reblog_parent_name=reblog_parent_name,
     )
 
 

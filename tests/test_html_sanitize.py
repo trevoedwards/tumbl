@@ -14,6 +14,11 @@ class HtmlSanitizeTests(unittest.TestCase):
         self.assertNotIn("script", clean.lower())
         self.assertIn("Hello", clean)
 
+    def test_adds_lazy_loading_to_images(self) -> None:
+        clean = sanitize_post_html('<img src="/media/1.jpg" alt="">')
+        self.assertIn('loading="lazy"', clean)
+        self.assertIn('decoding="async"', clean)
+
     def test_strips_event_handlers(self) -> None:
         dirty = '<img src="/media/1.jpg" onerror="alert(1)" alt="">'
         clean = sanitize_post_html(dirty)

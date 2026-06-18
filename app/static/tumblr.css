@@ -366,6 +366,58 @@ blockquote {
     gap: 10px;
 }
 
+.post-reblog-context {
+    padding: 10px 20px 0;
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+.post-reblog-context a {
+    font-weight: 600;
+}
+
+.post-tumblr-link {
+    display: inline-block;
+    font-size: 11px;
+    color: var(--text-faint);
+}
+
+.post-tumblr-link:hover {
+    color: var(--link);
+}
+
+.keyboard-hints {
+    position: fixed;
+    bottom: 16px;
+    right: 16px;
+    z-index: 20;
+    margin: 0;
+    padding: 10px 14px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-light);
+    border-radius: 3px;
+    box-shadow: 0 2px 8px var(--shadow-color);
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+.keyboard-hints kbd {
+    display: inline-block;
+    min-width: 1.2em;
+    padding: 1px 5px;
+    border: 1px solid var(--border-light);
+    border-radius: 3px;
+    background: var(--bg-page);
+    font: inherit;
+    font-size: 11px;
+    text-align: center;
+}
+
+.keyboard-hints-sep {
+    margin: 0 6px;
+    opacity: 0.6;
+}
+
 .post-tags {
     display: flex;
     flex-wrap: wrap;

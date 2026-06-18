@@ -1,4 +1,16 @@
 <article class="post post-{{ post.post_type }}{% if post.is_submission %} post-submission{% endif %}" id="post-{{ post.id }}">
+    {% if post.reblog_parent_url or post.reblog_parent_name %}
+    <div class="post-reblog-context">
+        {% if post.reblog_parent_url %}
+        Reblogged from
+        <a href="{{ post.reblog_parent_url | archive_post_url }}" rel="noopener noreferrer">
+            {{ post.reblog_parent_name or 'original post' }}
+        </a>
+        {% elif post.reblog_parent_name %}
+        Reblogged from {{ post.reblog_parent_name }}
+        {% endif %}
+    </div>
+    {% endif %}
     <div class="post-content">
         {{ post.body_html | safe }}
     </div>
@@ -16,6 +28,9 @@
             {% endif %}
             <div class="post-footer-links">
                 <a class="post-permalink" href="{{ url_for('single_post', post_id=post.id, _external=True) }}">Permalink</a>
+                {% if post.tumblr_url %}
+                <a class="post-tumblr-link" href="{{ post.tumblr_url }}" rel="noopener noreferrer" target="_blank">View on Tumblr</a>
+                {% endif %}
                 <button type="button" class="post-copy-link" data-share-url="{{ url_for('single_post', post_id=post.id, _external=True) }}" title="Copy link to this post">Copy link</button>
             </div>
         </div>

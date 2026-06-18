@@ -13,6 +13,7 @@ from pathlib import Path
 from bs4 import BeautifulSoup
 
 from app.parsers.base import PostMeta, PostType, sort_posts
+from app.post_metadata import merge_metadata
 
 logger = logging.getLogger(__name__)
 
@@ -107,6 +108,8 @@ def parse_post_file(path: Path, archive_root: Path) -> PostMeta | None:
     submissions_dir = archive_root / "posts" / "html" / "submissions"
     is_submission = submissions_dir in path.parents or path.parent == submissions_dir
 
+    tumblr_url, reblog_parent_url, reblog_parent_name = merge_metadata(body_html=body_html)
+
     return PostMeta(
         id=post_id,
         body_html=body_html,
@@ -114,6 +117,9 @@ def parse_post_file(path: Path, archive_root: Path) -> PostMeta | None:
         tags=tags,
         post_type=post_type,
         is_submission=is_submission,
+        tumblr_url=tumblr_url,
+        reblog_parent_url=reblog_parent_url,
+        reblog_parent_name=reblog_parent_name,
     )
 
 

@@ -17,13 +17,26 @@ class PostMeta:
     tags: list[str]
     post_type: PostType
     is_submission: bool
+    tumblr_url: str | None = None
+    reblog_parent_url: str | None = None
+    reblog_parent_name: str | None = None
 
     def to_dict(self) -> dict:
         return asdict(self)
 
     @classmethod
     def from_dict(cls, data: dict) -> PostMeta:
-        return cls(**data)
+        return cls(
+            id=data["id"],
+            body_html=data["body_html"],
+            timestamp=data["timestamp"],
+            tags=data["tags"],
+            post_type=data["post_type"],
+            is_submission=data["is_submission"],
+            tumblr_url=data.get("tumblr_url"),
+            reblog_parent_url=data.get("reblog_parent_url"),
+            reblog_parent_name=data.get("reblog_parent_name"),
+        )
 
 
 def post_sort_key(post: PostMeta) -> int:
