@@ -1,0 +1,23 @@
+<article class="post post-{{ post.post_type }}{% if post.is_submission %} post-submission{% endif %}" id="post-{{ post.id }}">
+    <div class="post-content">
+        {{ post.body_html | safe }}
+    </div>
+    <footer class="post-footer">
+        {% if post.timestamp %}
+        <time class="post-timestamp">{{ post.timestamp }}</time>
+        {% endif %}
+        <div class="post-footer-actions">
+            {% if post.tags %}
+            <div class="post-tags" aria-label="Tags">
+                {% for tag in post.tags %}
+                <a class="tag" href="{{ tag | tag_url }}">#{{ tag }}</a>
+                {% endfor %}
+            </div>
+            {% endif %}
+            <div class="post-footer-links">
+                <a class="post-permalink" href="{{ url_for('single_post', post_id=post.id, _external=True) }}">Permalink</a>
+                <button type="button" class="post-copy-link" data-share-url="{{ url_for('single_post', post_id=post.id, _external=True) }}" title="Copy link to this post">Copy link</button>
+            </div>
+        </div>
+    </footer>
+</article>

@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+
+{% block title %}{{ page_title }} | {{ blog_title }}{% endblock %}
+
+{% block head_meta %}
+<link rel="canonical" href="{{ share_url }}">
+<meta property="og:url" content="{{ share_url }}">
+<meta property="og:title" content="{{ page_title }} | {{ blog_title }}">
+<meta property="og:type" content="article">
+<meta name="twitter:card" content="summary">
+{% endblock %}
+
+{% block content %}
+<p class="back-link-wrap"><a class="back-link" href="{{ url_for('feed') }}">&larr; Back to blog</a></p>
+
+<section class="post-feed single-post-view">
+    {% include "post_card.html" %}
+</section>
+{% endblock %}
+

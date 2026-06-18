@@ -1,0 +1,167 @@
+{% extends "base.html" %}
+
+
+
+{% block title %}
+
+{% if feed_title %}{{ feed_title }} | {% elif active_tag %}#{{ active_tag }} | {% elif search_query %}Search | {% elif archive_year and archive_month %}{{ feed_title or (archive_year ~ '/' ~ archive_month) }} | {% elif active_type %}{{ active_type | title }} | {% endif %}{{ blog_title }}
+
+{% endblock %}
+
+
+
+{% block content %}
+
+<section class="feed-header">
+
+    {% if feed_title or active_tag %}
+
+    <h1 class="feed-title">
+
+        {% if active_tag %}#{{ active_tag }}{% else %}{{ feed_title }}{% endif %}
+
+    </h1>
+
+    {% endif %}
+
+    <p class="feed-meta">{{ total_posts }} post{% if total_posts != 1 %}s{% endif %}</p>
+
+    {% if active_tag or active_type or search_query or archive_year or archive_month %}
+
+    <p><a class="back-link" href="{{ url_for('feed') }}">&larr; Back to all posts</a></p>
+
+    {% endif %}
+
+</section>
+
+
+
+<section class="post-feed" id="post-feed"
+
+    data-page="{{ page }}"
+
+    data-total-pages="{{ total_pages }}"
+
+    {% if active_tag %}data-tag="{{ active_tag }}"{% endif %}
+
+    {% if active_type %}data-type="{{ active_type }}"{% endif %}
+
+    {% if search_query %}data-search="{{ search_query }}"{% endif %}
+
+    {% if archive_year %}data-year="{{ archive_year }}"{% endif %}
+
+    {% if archive_month %}data-month="{{ archive_month }}"{% endif %}>
+
+    {% for post in posts %}
+
+    {% include "post_card.html" %}
+
+    {% else %}
+
+    <p class="empty-feed">
+
+        {% if search_query %}No posts matched your search.{% else %}No posts found.{% endif %}
+
+    </p>
+
+    {% endfor %}
+
+</section>
+
+
+
+<nav class="pagination" id="pagination" aria-label="Pagination"{% if total_pages <= 1 %} hidden{% endif %}>
+
+    {% if page > 1 %}
+
+        {% if search_query %}
+
+        <a class="pagination-link" href="{{ url_for('search', q=search_query, page=page - 1) }}">&larr; Newer</a>
+
+        {% elif active_tag %}
+
+        <a class="pagination-link" href="{{ url_for('tag_feed', tag=active_tag, page=page - 1) }}">&larr; Newer</a>
+
+        {% elif active_type %}
+
+        <a class="pagination-link" href="{{ url_for('type_feed', post_type=active_type, page=page - 1) }}">&larr; Newer</a>
+
+        {% elif archive_year and archive_month %}
+
+        <a class="pagination-link" href="{{ url_for('archive_month', year=archive_year, month=archive_month, page=page - 1) }}">&larr; Newer</a>
+
+        {% else %}
+
+        <a class="pagination-link" href="{{ url_for('feed', page=page - 1) }}">&larr; Newer</a>
+
+        {% endif %}
+
+    {% else %}
+
+    <span class="pagination-link pagination-link-disabled">&larr; Newer</span>
+
+    {% endif %}
+
+    <span class="pagination-status">Page {{ page }} of {{ total_pages }}</span>
+
+    {% if page < total_pages %}
+
+        {% if search_query %}
+
+        <a class="pagination-link" href="{{ url_for('search', q=search_query, page=page + 1) }}">Older &rarr;</a>
+
+        {% elif active_tag %}
+
+        <a class="pagination-link" href="{{ url_for('tag_feed', tag=active_tag, page=page + 1) }}">Older &rarr;</a>
+
+        {% elif active_type %}
+
+        <a class="pagination-link" href="{{ url_for('type_feed', post_type=active_type, page=page + 1) }}">Older &rarr;</a>
+
+        {% elif archive_year and archive_month %}
+
+        <a class="pagination-link" href="{{ url_for('archive_month', year=archive_year, month=archive_month, page=page + 1) }}">Older &rarr;</a>
+
+        {% else %}
+
+        <a class="pagination-link" href="{{ url_for('feed', page=page + 1) }}">Older &rarr;</a>
+
+        {% endif %}
+
+    {% else %}
+
+    <span class="pagination-link pagination-link-disabled">Older &rarr;</span>
+
+    {% endif %}
+
+</nav>
+
+
+
+<div class="infinite-scroll-sentinel" id="infinite-scroll-sentinel" hidden>
+
+    <p class="infinite-scroll-loading" id="infinite-scroll-loading" hidden>Loading more posts…</p>
+
+    <p class="infinite-scroll-end" id="infinite-scroll-end" hidden>You've reached the end.</p>
+
+</div>
+
+{% endblock %}
+
+
+
+{% block scripts %}
+
+<script>
+
+    document.addEventListener("DOMContentLoaded", function () {
+
+        tumbl.initFeedPage();
+
+    });
+
+</script>
+
+{% endblock %}
+
+

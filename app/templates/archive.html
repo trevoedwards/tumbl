@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block title %}
+{% if active_year and not months %}Archive {{ active_year }} | {% elif active_year %}Archive | {% else %}Archive | {% endif %}{{ blog_title }}
+{% endblock %}
+
+{% block content %}
+<p class="back-link-wrap"><a class="back-link" href="{{ url_for('feed') }}">&larr; Back to blog</a></p>
+
+<section class="archive-panel">
+    {% if active_year and months is defined and months %}
+    <h1 class="page-title">{{ active_year }}</h1>
+    <p class="page-intro">{{ year_total }} post{% if year_total != 1 %}s{% endif %} this year.</p>
+    <p><a class="back-link" href="{{ url_for('archive_index') }}">&larr; All years</a></p>
+    <ul class="archive-month-list">
+        {% for month, count, label in months %}
+        <li>
+            <a class="archive-month-link" href="{{ url_for('archive_month', year=active_year, month=month) }}">
+                {{ label }}
+                <span class="archive-count">{{ count }}</span>
+            </a>
+        </li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <h1 class="page-title">Archive</h1>
+    <p class="page-intro">Browse posts by year.</p>
+    {% if years %}
+    <ul class="archive-year-list">
+        {% for year, count in years %}
+        <li>
+            <a class="archive-year-link" href="{{ url_for('archive_year', year=year) }}">
+                {{ year }}
+                <span class="archive-count">{{ count }} post{% if count != 1 %}s{% endif %}</span>
+            </a>
+        </li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <p class="empty-feed">No dated posts found.</p>
+    {% endif %}
+    {% endif %}
+</section>
+{% endblock %}
+

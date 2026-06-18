@@ -1,0 +1,24 @@
+services:
+  tumbl:
+    build: .
+    container_name: tumbl
+    ports:
+      - "8862:8862"
+    volumes:
+      - ./.tumblrbackup:/archive:ro
+      - tumbl-cache:/app/cache
+    environment:
+      - ARCHIVE_PATH=${ARCHIVE_PATH:-/archive}
+      - CACHE_DIR=${CACHE_DIR:-/app/cache}
+      - BLOG_TITLE=${BLOG_TITLE:-MyBlog}
+      - INDEX_WORKERS=${INDEX_WORKERS:-4}
+      - BACKGROUND_IMAGE=${BACKGROUND_IMAGE:-}
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8862/healthz')"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 60s
+
+volumes:
+  tumbl-cache:

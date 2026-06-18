@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block title %}Tags | {{ blog_title }}{% endblock %}
+
+{% block content %}
+<p class="back-link-wrap"><a class="back-link" href="{{ url_for('feed') }}">&larr; Back to blog</a></p>
+
+<section class="tags-panel">
+    <h1 class="page-title">Tags</h1>
+    <p class="page-intro">{{ tag_counts | length }} tag{% if tag_counts | length != 1 %}s{% endif %} in this archive.</p>
+
+    {% if tag_counts %}
+    <div class="tag-cloud">
+        {% for tag, count in tag_counts %}
+        <a class="tag-cloud-item" href="{{ tag | tag_url }}" style="--tag-weight: {{ [count, 1] | max }};">
+            #{{ tag }}
+            <span class="tag-cloud-count">{{ count }}</span>
+        </a>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p class="empty-feed">No tags found.</p>
+    {% endif %}
+</section>
+{% endblock %}
+

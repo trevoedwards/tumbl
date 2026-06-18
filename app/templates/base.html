@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}{{ blog_title }}{% endblock %}</title>
+    {% block head_meta %}{% endblock %}
+    <script>
+        (function () {
+            try {
+                var settings = JSON.parse(localStorage.getItem("tumbl.settings") || "{}");
+                if (settings.darkMode) {
+                    document.documentElement.classList.add("dark-mode");
+                }
+            } catch (e) {}
+        })();
+    </script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='tumblr.css') }}">
+</head>
+<body
+    data-default-blog-title="{{ blog_title }}"
+    {% if default_background_image %}data-default-background-image="{{ default_background_image }}"{% endif %}
+>
+    <header class="tumblr-header">
+        <div class="header-inner">
+            <a class="blog-title" href="{{ url_for('feed') }}" data-default-title="{{ blog_title }}">{{ blog_title }}</a>
+            <div class="header-actions">
+                <form class="header-search" action="{{ url_for('search') }}" method="get" role="search">
+                    <input
+                        class="header-search-input"
+                        type="search"
+                        name="q"
+                        value="{{ request.args.get('q', '') }}"
+                        placeholder="Search posts…"
+                        aria-label="Search posts"
+                        autocomplete="off"
+                    >
+                </form>
+                <span class="tumblr-wordmark">tumbl</span>
+                <a class="settings-link" href="{{ url_for('settings') }}" aria-label="Settings" title="Settings">
+                    <svg class="settings-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+                        <path fill="currentColor" d="M12 15.5A3.5 3.5 0 0 1 8.5 12 3.5 3.5 0 0 1 12 8.5a3.5 3.5 0 0 1 3.5 3.5 3.5 3.5 0 0 1-3.5 3.5m7.43-2.53c.04-.32.07-.64.07-.97 0-.33-.03-.66-.07-1l2.11-1.63c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.31-.61-.22l-2.49 1c-.52-.39-1.06-.73-1.69-.98l-.37-2.65A.506.506 0 0 0 14 2h-4c-.25 0-.46.18-.5.42l-.37 2.65c-.63.25-1.17.59-1.69.98l-2.49-1c-.22-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64L4.57 11c-.04.34-.07.67-.07 1 0 .33.03.65.07.97l-2.11 1.66c-.19.15-.25.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1.01c.52.4 1.06.74 1.69.99l.37 2.65c.04.24.25.42.5.42h4c.25 0 .46-.18.5-.42l.37-2.65c.63-.26 1.17-.59 1.69-.99l2.49 1.01c.22.08.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.66Z"/>
+                    </svg>
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <nav class="site-nav" aria-label="Browse">
+        <div class="site-nav-inner">
+            <a class="site-nav-link{% if request.endpoint == 'feed' and not nav_active_type %} site-nav-link-active{% endif %}" href="{{ url_for('feed') }}">Posts</a>
+            <details class="site-nav-dropdown">
+                <summary class="site-nav-link site-nav-dropdown-toggle{% if nav_active_type %} site-nav-link-active{% endif %}">
+                    {% if nav_active_type %}{{ nav_active_type | title }}{% else %}Type{% endif %}
+                </summary>
+                <div class="site-nav-dropdown-menu" role="menu">
+                    <a class="site-nav-dropdown-item{% if not nav_active_type %} site-nav-dropdown-item-active{% endif %}" href="{{ url_for('feed') }}" role="menuitem">All posts</a>
+                    {% for post_type in post_types %}
+                    <a class="site-nav-dropdown-item{% if nav_active_type == post_type %} site-nav-dropdown-item-active{% endif %}" href="{{ url_for('type_feed', post_type=post_type) }}" role="menuitem">{{ post_type | title }}</a>
+                    {% endfor %}
+                </div>
+            </details>
+            <a class="site-nav-link{% if request.endpoint == 'tags' %} site-nav-link-active{% endif %}" href="{{ url_for('tags') }}">Tags</a>
+            <a class="site-nav-link{% if request.endpoint in ['archive_index', 'archive_year', 'archive_month'] %} site-nav-link-active{% endif %}" href="{{ url_for('archive_index') }}">Archive</a>
+        </div>
+    </nav>
+
+    <main class="tumblr-main">
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="tumblr-site-footer">
+        <div class="footer-inner">
+            <p>Powered by <strong>tumbl</strong></p>
+            <a class="footer-github-link" href="{{ github_repo_url }}" aria-label="GitHub repository" title="GitHub" target="_blank" rel="noopener noreferrer">
+                <svg class="footer-github-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+                    <path fill="currentColor" d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/>
+                </svg>
+            </a>
+        </div>
+    </footer>
+
+    <script src="{{ url_for('static', filename='tumbl.js') }}" defer></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

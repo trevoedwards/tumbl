@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+
+{% block title %}Settings | {{ blog_title }}{% endblock %}
+
+{% block content %}
+<p class="back-link-wrap"><a class="back-link" href="{{ url_for('feed') }}">&larr; Back to blog</a></p>
+
+<section class="settings-panel">
+    <h1 class="settings-title">Settings</h1>
+    <p class="settings-intro">Customize how your archive is displayed. Settings are saved in your browser.</p>
+
+    <form class="settings-form" id="settings-form">
+        <fieldset class="settings-group">
+            <legend class="settings-group-title">Blog</legend>
+
+            <div class="settings-field">
+                <label class="settings-field-label" for="blog-title">
+                    <strong>Blog title</strong>
+                    <span class="settings-field-desc">Name shown in the site header and browser tab.</span>
+                </label>
+                <div class="settings-field-controls">
+                    <input
+                        type="text"
+                        id="blog-title"
+                        class="settings-text-input"
+                        name="blog_title"
+                        maxlength="120"
+                        autocomplete="off"
+                        spellcheck="false"
+                    >
+                    <button type="button" class="settings-field-reset" id="blog-title-reset">Reset</button>
+                </div>
+            </div>
+        </fieldset>
+
+        <fieldset class="settings-group">
+            <legend class="settings-group-title">Feed</legend>
+
+            <label class="settings-toggle">
+                <input type="checkbox" id="infinite-scroll" name="infinite_scroll">
+                <span class="settings-toggle-label">
+                    <strong>Infinite scroll</strong>
+                    <span class="settings-toggle-desc">
+                        Load older posts automatically as you scroll down, instead of using page numbers.
+                    </span>
+                </span>
+            </label>
+        </fieldset>
+
+        <fieldset class="settings-group">
+            <legend class="settings-group-title">Appearance</legend>
+
+            <label class="settings-toggle">
+                <input type="checkbox" id="dark-mode" name="dark_mode">
+                <span class="settings-toggle-label">
+                    <strong>Dark mode</strong>
+                    <span class="settings-toggle-desc">
+                        Switch to Tumblr's classic dark palette — navy page (#001935), navy header (#36465d), and light text.
+                    </span>
+                </span>
+            </label>
+
+            <div class="settings-color">
+                <input type="color" id="background-color" class="settings-color-input" value="#f0f0f0" aria-label="Background color picker">
+                <div class="settings-color-fields">
+                    <span class="settings-color-label">
+                        <strong>Background color</strong>
+                        <span class="settings-color-desc">Page background behind the blog column. Enter a HEX code (e.g. #001935) or use the picker.</span>
+                    </span>
+                    <div class="settings-color-controls">
+                        <input
+                            type="text"
+                            id="background-color-hex"
+                            class="settings-hex-input"
+                            name="background_color_hex"
+                            placeholder="#f0f0f0"
+                            maxlength="7"
+                            spellcheck="false"
+                            autocomplete="off"
+                            aria-label="Background color HEX code"
+                        >
+                        <button type="button" class="settings-color-reset" id="background-color-reset">Reset</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="settings-field">
+                <label class="settings-field-label" for="background-image-url">
+                    <strong>Background image URL</strong>
+                    <span class="settings-field-desc">
+                        Optional image behind the blog column. You can also set a default file path or URL with the
+                        <code>BACKGROUND_IMAGE</code> environment variable.
+                    </span>
+                </label>
+                <div class="settings-field-controls">
+                    <input
+                        type="url"
+                        id="background-image-url"
+                        class="settings-text-input"
+                        name="background_image_url"
+                        placeholder="https://example.com/background.jpg"
+                        spellcheck="false"
+                        autocomplete="off"
+                    >
+                    <button type="button" class="settings-field-reset" id="background-image-reset">Reset</button>
+                </div>
+            </div>
+        </fieldset>
+
+        <p class="settings-saved" id="settings-saved" hidden>Saved.</p>
+    </form>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        tumbl.initSettingsPage();
+    });
+</script>
+{% endblock %}
