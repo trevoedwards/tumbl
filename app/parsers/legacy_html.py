@@ -60,13 +60,13 @@ def _process_body_html(raw_html: str) -> str:
     content = MEDIA_PATH_RE.sub("/media/", content)
 
     def _audio_replacer(match: re.Match[str]) -> str:
-        src = match.group(1)
+        src = html.escape(match.group(1), quote=True)
         return f'<audio controls preload="metadata" src="{src}"></audio>'
 
     content = AUDIO_EMBED_RE.sub(_audio_replacer, content)
 
     def _video_replacer(match: re.Match[str]) -> str:
-        src = match.group(1)
+        src = html.escape(match.group(1), quote=True)
         return (
             f'<div class="video-embed">'
             f'<video controls preload="metadata" src="{src}"></video>'

@@ -44,6 +44,15 @@ from app.parser import PostMeta, get_or_build_index
 
 from app.post_filters import VALID_POST_TYPES, apply_filters
 
+from app.security import (
+    PUBLIC_INDEX_ERROR,
+    apply_security_headers,
+    is_path_under,
+    is_safe_http_url,
+    is_valid_post_id,
+    resolve_allowed_file,
+)
+
 from app.tag_index import build_tag_counts
 
 from app.timestamp_parse import month_label
@@ -205,7 +214,7 @@ def create_app() -> Flask:
 
     app = Flask(__name__)
 
-
+    app_root = Path(__file__).resolve().parent.parent
 
     archive_path = Path(os.environ.get("ARCHIVE_PATH", ".tumblrbackup")).resolve()
 
@@ -225,15 +234,20 @@ def create_app() -> Flask:
 
     if background_image_env.startswith(("http://", "https://")):
 
-        background_image_url = background_image_env
+        if is_safe_http_url(background_image_env):
+
+            background_image_url = background_image_env
+
+        else:
+
+            logger.warning("Ignoring invalid BACKGROUND_IMAGE URL: %s", background_image_env)
 
     elif background_image_env:
 
-        candidate = Path(background_image_env)
-
-        if candidate.is_file():
-
-            background_image_path = candidate.resolve()
+        background_image_path = resolve_allowed_file(
+            background_image_env,
+            [archive_path, app_root],
+        )
 
 
 
@@ -248,6 +262,14 @@ def create_app() -> Flask:
     app.config["BACKGROUND_IMAGE_PATH"] = background_image_path
 
     app.config["BACKGROUND_IMAGE_URL"] = background_image_url
+
+
+
+    @app.after_request
+
+    def _add_security_headers(response):
+
+        return apply_security_headers(response)
 
 
 
@@ -287,7 +309,7 @@ def create_app() -> Flask:
 
         if _index_error:
 
-            abort(500, description=_index_error)
+            abort(500, description=PUBLIC_INDEX_ERROR)
 
         if _posts_index is None:
 
@@ -319,7 +341,7 @@ def create_app() -> Flask:
 
         if _index_error:
 
-            abort(500, description=_index_error)
+            abort(500, description=PUBLIC_INDEX_ERROR)
 
         if _posts_index is None:
 
@@ -807,6 +829,12 @@ def create_app() -> Flask:
 
 
 
+        if not is_valid_post_id(post_id):
+
+            abort(404)
+
+
+
         posts = _get_index()
 
         post = next((item for item in posts if item.id == post_id), None)
@@ -845,7 +873,7 @@ def create_app() -> Flask:
 
             if _index_error:
 
-                return jsonify({"status": "error", "error": _index_error}), 503
+                return jsonify({"status": "error", "error": PUBLIC_INDEX_ERROR}), 503
 
             if _posts_index is None:
 
@@ -867,7 +895,7 @@ def create_app() -> Flask:
 
             if _index_error:
 
-                return jsonify({"ready": False, "error": _index_error}), 500
+                return jsonify({"ready": False, "error": PUBLIC_INDEX_ERROR}), 500
 
             if _posts_index is None:
 
@@ -915,9 +943,11 @@ def create_app() -> Flask:
 
 
 
-        resolved = media_dir / safe_name
+        media_root = media_dir.resolve()
 
-        if not resolved.is_file():
+        resolved = (media_dir / safe_name).resolve()
+
+        if not resolved.is_file() or not is_path_under(resolved, media_root):
 
             lower_name = safe_name.lower()
 
@@ -925,13 +955,19 @@ def create_app() -> Flask:
 
                 if candidate.is_file() and candidate.name.lower() == lower_name:
 
-                    resolved = candidate
+                    resolved = candidate.resolve()
 
                     break
 
             else:
 
                 abort(404)
+
+
+
+        if not is_path_under(resolved, media_root):
+
+            abort(404)
 
 
 

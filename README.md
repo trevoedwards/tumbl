@@ -1,6 +1,10 @@
 # tumbl
 
-Self-hosted viewer for Tumblr blog backup exports. Point it at an archive folder and browse your posts locally in a classic Tumblr-style theme—no account required, no data sent anywhere.
+Self-hosted viewer for Tumblr blog backup exports. 
+
+Point it at an archive folder and browse your posts locally in a classic Tumblr-style theme. 
+
+No account required, no data sent anywhere.
 
 [![Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg)](https://www.python.org/downloads/)
 [![Flask](https://img.shields.io/badge/flask-3.x-green.svg)](https://flask.palletsprojects.com/)

@@ -8,7 +8,9 @@ import textwrap
 import unittest
 import zipfile
 from pathlib import Path
+from unittest.mock import patch
 
+from app import archive_prepare
 from app.archive_detect import ArchiveFormat, detect_archive_format
 from app.archive_prepare import prepare_archive
 
@@ -57,6 +59,16 @@ class ArchivePrepareTests(unittest.TestCase):
             prepare_archive(self.archive_root)
 
         self.assertFalse((self.archive_root / "evil.txt").exists())
+
+    @patch.object(archive_prepare, "MAX_ZIP_UNCOMPRESSED_BYTES", 100)
+    def test_rejects_oversized_zip(self) -> None:
+        buffer = io.BytesIO()
+        with zipfile.ZipFile(buffer, "w") as archive:
+            archive.writestr("posts.xml", "x" * 101)
+        (self.archive_root / "posts.zip").write_bytes(buffer.getvalue())
+
+        with self.assertRaises(ValueError):
+            prepare_archive(self.archive_root)
 
 
 if __name__ == "__main__":

@@ -16,6 +16,7 @@ from app.archive_detect import (
     detect_archive_format,
 )
 from app.archive_prepare import prepare_archive
+from app.html_sanitize import sanitize_post_html
 from app.parsers.base import PostMeta
 from app.parsers.legacy_html import build_index as build_legacy_index
 from app.parsers.modern_xml import build_index as build_modern_index
@@ -37,6 +38,12 @@ def _get_builder(fmt: ArchiveFormat):
             f"Archive format '{fmt.value}' is recognized but not yet supported."
         )
     return builder
+
+
+def _sanitize_posts(posts: list[PostMeta]) -> list[PostMeta]:
+    for post in posts:
+        post.body_html = sanitize_post_html(post.body_html)
+    return posts
 
 
 def cache_path(cache_root: Path, fmt: ArchiveFormat) -> Path:
@@ -69,7 +76,8 @@ def load_cached_index(
             return None
 
         data = json.loads(path.read_text(encoding="utf-8"))
-        return [PostMeta.from_dict(item) for item in data]
+        posts = [PostMeta.from_dict(item) for item in data]
+        return _sanitize_posts(posts)
     except (OSError, json.JSONDecodeError, TypeError, KeyError):
         return None
 
@@ -125,5 +133,6 @@ def get_or_build_index(
             return cached
 
     posts = build_index(archive_root, fmt, on_progress=on_progress)
+    _sanitize_posts(posts)
     save_index_cache(writable_cache, fmt, posts, archive_root)
     return posts

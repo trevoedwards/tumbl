@@ -218,8 +218,14 @@ def _render_post_body(post_el: ET.Element, post_id: str, media_dir: Path) -> str
     return renderer()
 
 
-def parse_posts_xml(archive_root: Path) -> list[PostMeta]:
+def parse_posts_xml(archive_root: Path, *, max_bytes: int = 512 * 1024 * 1024) -> list[PostMeta]:
     posts_xml = archive_root / "posts" / "posts.xml"
+    xml_size = posts_xml.stat().st_size
+    if xml_size > max_bytes:
+        raise ValueError(
+            f"posts.xml is too large ({xml_size} bytes; limit is {max_bytes})"
+        )
+
     media_dir = archive_root / "media"
 
     tree = ET.parse(posts_xml)

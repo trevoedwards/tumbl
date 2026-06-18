@@ -98,12 +98,32 @@
         return darkMode ? DEFAULT_BG_DARK : DEFAULT_BG_LIGHT;
     }
 
+    function isSafeBackgroundImageUrl(value) {
+        var trimmed = (value || "").trim();
+        if (!trimmed) {
+            return false;
+        }
+        if (trimmed.startsWith("/")) {
+            return !/[\s"'()\\]/.test(trimmed);
+        }
+        try {
+            var parsed = new URL(trimmed, window.location.origin);
+            return parsed.protocol === "http:" || parsed.protocol === "https:";
+        } catch (e) {
+            return false;
+        }
+    }
+
     function resolveBackgroundImage(settings) {
         var custom = (settings.backgroundImage || "").trim();
-        if (custom) {
+        if (custom && isSafeBackgroundImageUrl(custom)) {
             return custom;
         }
-        return getDefaultBackgroundImage();
+        if (custom) {
+            return "";
+        }
+        var defaultImage = getDefaultBackgroundImage();
+        return isSafeBackgroundImageUrl(defaultImage) ? defaultImage : "";
     }
 
     function hexToRgb(hex) {
@@ -174,7 +194,8 @@
 
         var bgImage = resolveBackgroundImage(settings);
         if (bgImage) {
-            root.style.setProperty("--bg-image", 'url("' + bgImage.replace(/"/g, "") + '")');
+            var safeUrl = bgImage.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+            root.style.setProperty("--bg-image", 'url("' + safeUrl + '")');
         } else {
             root.style.removeProperty("--bg-image");
         }
@@ -366,7 +387,8 @@
 
         if (backgroundImageUrl) {
             backgroundImageUrl.addEventListener("change", function () {
-                settings.backgroundImage = backgroundImageUrl.value.trim();
+                var value = backgroundImageUrl.value.trim();
+                settings.backgroundImage = isSafeBackgroundImageUrl(value) ? value : "";
                 persistAppearance(settings);
             });
         }
