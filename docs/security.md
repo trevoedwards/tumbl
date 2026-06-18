@@ -11,11 +11,13 @@ tumbl is designed for **local, private use**. Treat it like any self-hosted serv
 | XML parsing | `posts.xml` size cap (512 MB) before parse |
 | Media files | Filename sanitization + resolved path must stay under `media/` |
 | Background image | File paths restricted to archive or app root; URLs must be `http`/`https` |
-| HTTP responses | CSP, `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy` |
+| HTTP responses | CSP (`script-src 'self'`), `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy` |
 | Errors | Public API/UI messages are generic; details logged server-side only |
 | Client settings | Background image URLs validated in browser before applying to CSS |
 
 Post HTML is still rendered with Jinja's `| safe` filter, but content is sanitized first. Unusual markup (inline styles, uncommon tags) may be stripped.
+
+All page JavaScript lives in `app/static/` (`early-init.js`, `tumbl.js`) so CSP can keep `script-src 'self'` without `'unsafe-inline'`.
 
 ## Residual risk
 

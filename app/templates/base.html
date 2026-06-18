@@ -5,16 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{% block title %}{{ blog_title }}{% endblock %}</title>
     {% block head_meta %}{% endblock %}
-    <script>
-        (function () {
-            try {
-                var settings = JSON.parse(localStorage.getItem("tumbl.settings") || "{}");
-                if (settings.darkMode) {
-                    document.documentElement.classList.add("dark-mode");
-                }
-            } catch (e) {}
-        })();
-    </script>
+    <script src="{{ url_for('static', filename='early-init.js') }}"></script>
     <link rel="stylesheet" href="{{ url_for('static', filename='tumblr.css') }}">
 </head>
 <body
@@ -62,6 +53,7 @@
             </details>
             <a class="site-nav-link{% if request.endpoint == 'tags' %} site-nav-link-active{% endif %}" href="{{ url_for('tags') }}">Tags</a>
             <a class="site-nav-link{% if request.endpoint in ['archive_index', 'archive_year', 'archive_month'] %} site-nav-link-active{% endif %}" href="{{ url_for('archive_index') }}">Archive</a>
+            <a class="site-nav-link{% if request.endpoint == 'random_post' %} site-nav-link-active{% endif %}" href="{{ url_for('random_post') }}">Random</a>
         </div>
     </nav>
 

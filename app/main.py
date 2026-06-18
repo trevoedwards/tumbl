@@ -3,6 +3,7 @@
 from __future__ import annotations
 import logging
 import os
+import random
 import threading
 from calendar import month_name
 from dataclasses import dataclass
@@ -11,6 +12,7 @@ from flask import (
     Flask,
     abort,
     jsonify,
+    redirect,
     render_template,
     request,
     send_from_directory,
@@ -30,6 +32,7 @@ from app.index_progress import (
     reset,
     snapshot,
 )
+from app.open_graph import preview_description, preview_image_url
 from app.parser import PostMeta, get_or_build_index
 from app.post_filters import VALID_POST_TYPES, apply_filters
 from app.security import (
@@ -46,7 +49,7 @@ from app.tag_index import build_tag_counts
 from app.timestamp_parse import month_label
 
 POSTS_PER_PAGE = 20
-GITHUB_REPO_URL = "https://github.com/your-username/tumblr-archive"
+GITHUB_REPO_URL = "https://github.com/trevoedwards/tumbl"
 logger = logging.getLogger(__name__)
 _index_lock = threading.Lock()
 _posts_index: list[PostMeta] | None = None
@@ -421,12 +424,32 @@ def create_app() -> Flask:
             abort(404)
         share_url = url_for("single_post", post_id=post.id, _external=True)
         page_title = post.timestamp or f"Post {post.id}"
+        og_image = preview_image_url(
+            post,
+            absolute_media_url=lambda name: url_for(
+                "media", filename=name, _external=True
+            ),
+        )
+        og_description = preview_description(post)
         return render_template(
             "post.html",
             post=post,
             share_url=share_url,
             page_title=page_title,
+            og_image=og_image,
+            og_description=og_description,
         )
+
+    @app.route("/random")
+    def random_post():
+        loading = _loading_or_ready()
+        if loading:
+            return loading
+        posts = _get_index()
+        if not posts:
+            abort(404)
+        post = random.choice(posts)
+        return redirect(url_for("single_post", post_id=post.id))
 
     @app.route("/healthz")
     def healthz():

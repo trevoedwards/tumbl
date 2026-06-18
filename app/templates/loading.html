@@ -1,66 +1,15 @@
-{% extends "base.html" %}
-
-{% block title %}Loading {{ blog_title }}{% endblock %}
-
-{% block content %}
-<section class="loading-panel">
-    <h1>Loading archive…</h1>
-    <p id="loading-status">Parsing posts from your Tumblr backup. This may take a few minutes on first load.</p>
-    <div class="loading-progress" id="loading-progress" hidden>
-        <div class="loading-progress-bar" id="loading-progress-bar"></div>
-    </div>
-    <p class="loading-progress-label" id="loading-progress-label" hidden></p>
-</section>
-{% endblock %}
-
-{% block scripts %}
-<script>
-    document.addEventListener("DOMContentLoaded", function () {
-        var statusEl = document.getElementById("loading-status");
-        var progressWrap = document.getElementById("loading-progress");
-        var progressBar = document.getElementById("loading-progress-bar");
-        var progressLabel = document.getElementById("loading-progress-label");
-
-        function updateProgress(data) {
-            if (!data.total || data.total <= 0) {
-                return;
-            }
-            progressWrap.hidden = false;
-            progressLabel.hidden = false;
-            var percent = Math.min(100, Math.round((data.completed / data.total) * 100));
-            progressBar.style.width = percent + "%";
-            progressLabel.textContent = "Indexed " + data.completed + " of " + data.total + " posts (" + percent + "%)";
-        }
-
-        function poll() {
-            fetch("/api/index-status")
-                .then(function (response) {
-                    return response.json().then(function (data) {
-                        return { ok: response.ok, data: data };
-                    });
-                })
-                .then(function (result) {
-                    if (result.data.ready) {
-                        window.location.reload();
-                        return;
-                    }
-                    if (result.data.error) {
-                        statusEl.textContent = result.data.error;
-                        return;
-                    }
-                    if (result.data.total) {
-                        updateProgress(result.data);
-                        statusEl.textContent = "Building your post index…";
-                    }
-                    window.setTimeout(poll, 1000);
-                })
-                .catch(function () {
-                    window.setTimeout(poll, 2000);
-                });
-        }
-
-        poll();
-    });
-</script>
-{% endblock %}
+{% extends "base.html" %}
+
+{% block title %}Loading {{ blog_title }}{% endblock %}
+
+{% block content %}
+<section class="loading-panel">
+    <h1>Loading archive…</h1>
+    <p id="loading-status">Parsing posts from your Tumblr backup. This may take a few minutes on first load.</p>
+    <div class="loading-progress" id="loading-progress" hidden>
+        <div class="loading-progress-bar" id="loading-progress-bar"></div>
+    </div>
+    <p class="loading-progress-label" id="loading-progress-label" hidden></p>
+</section>
+{% endblock %}
 

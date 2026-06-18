@@ -600,6 +600,69 @@
         });
     }
 
+    function initLoadingPage() {
+        var statusEl = document.getElementById("loading-status");
+        if (!statusEl) {
+            return;
+        }
+        var progressWrap = document.getElementById("loading-progress");
+        var progressBar = document.getElementById("loading-progress-bar");
+        var progressLabel = document.getElementById("loading-progress-label");
+
+        function updateProgress(data) {
+            if (!data.total || data.total <= 0) {
+                return;
+            }
+            progressWrap.hidden = false;
+            progressLabel.hidden = false;
+            var percent = Math.min(100, Math.round((data.completed / data.total) * 100));
+            progressBar.style.width = percent + "%";
+            progressLabel.textContent =
+                "Indexed " + data.completed + " of " + data.total + " posts (" + percent + "%)";
+        }
+
+        function poll() {
+            fetch("/api/index-status")
+                .then(function (response) {
+                    return response.json().then(function (data) {
+                        return { ok: response.ok, data: data };
+                    });
+                })
+                .then(function (result) {
+                    if (result.data.ready) {
+                        window.location.reload();
+                        return;
+                    }
+                    if (result.data.error) {
+                        statusEl.textContent = result.data.error;
+                        return;
+                    }
+                    if (result.data.total) {
+                        updateProgress(result.data);
+                        statusEl.textContent = "Building your post index…";
+                    }
+                    window.setTimeout(poll, 1000);
+                })
+                .catch(function () {
+                    window.setTimeout(poll, 2000);
+                });
+        }
+
+        poll();
+    }
+
+    function initPage() {
+        if (document.getElementById("infinite-scroll")) {
+            initSettingsPage();
+        }
+        if (document.getElementById("post-feed")) {
+            initFeedPage();
+        }
+        if (document.getElementById("loading-status")) {
+            initLoadingPage();
+        }
+    }
+
     window.tumbl = {
         getSettings: getSettings,
         saveSettings: saveSettings,
@@ -608,10 +671,12 @@
         initGlobalAppearance: initGlobalAppearance,
         initSettingsPage: initSettingsPage,
         initFeedPage: initFeedPage,
+        initLoadingPage: initLoadingPage,
         initPhotoLightbox: initPhotoLightbox,
     };
 
     initGlobalAppearance();
     initCopyLinkButtons();
     initPhotoLightbox();
+    document.addEventListener("DOMContentLoaded", initPage);
 })();

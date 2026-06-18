@@ -18,8 +18,8 @@ No account required, no data sent anywhere.
 ## Features
 
 - Paginated feed, full-text search, tag cloud, and date archive
-- Post type filters (photo, audio, video, text) and photo lightbox
-- Permalink pages, tag filtering, and classic Tumblr UI
+- Post type filters (photo, audio, video, text), photo lightbox, and **Random** post
+- Permalink pages with Open Graph previews for sharing
 - Legacy, modern, and tumblr-utils export formats
 - Auto-extract `posts.zip`, background indexing with progress, persistent cache
 - Docker-first, fully offline
@@ -129,8 +129,8 @@ HTML sanitization, zip guards, path validation, and security headers are documen
 ## Roadmap
 
 - [ ] Messaging / conversations viewer (`messages.xml`)
-- [ ] Open Graph images on permalink pages
-- [ ] Random post (`/random`)
+- [x] Open Graph images on permalink pages
+- [x] Random post (`/random`)
 - [x] Full-text search, tag cloud, date archive
 - [x] tumblr-utils support, auto-extract `posts.zip`, photo lightbox
 - [x] Post type filters, async indexing, theme customization
