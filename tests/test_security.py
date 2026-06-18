@@ -53,6 +53,19 @@ class SecurityHelperTests(unittest.TestCase):
         self.assertFalse(is_safe_http_url("javascript:alert(1)"))
         self.assertFalse(is_safe_http_url("file:///etc/passwd"))
 
+    def test_clamp_query(self) -> None:
+        from app.security import clamp_query
+
+        self.assertEqual(clamp_query("  hello  "), "hello")
+        self.assertEqual(len(clamp_query("x" * 1000)), 500)
+
+    def test_is_valid_tag(self) -> None:
+        from app.security import is_valid_tag
+
+        self.assertTrue(is_valid_tag("photography"))
+        self.assertFalse(is_valid_tag(""))
+        self.assertFalse(is_valid_tag("x" * 201))
+
 
 if __name__ == "__main__":
     unittest.main()

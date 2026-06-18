@@ -39,6 +39,8 @@ tumbl reads `posts.xml` as the source of truth and serves images from the local 
 
 **`posts.zip`:** tumbl auto-extracts this on startup when needed. You can also extract it manually before launch.
 
+Extraction limits (path traversal is rejected): up to **100,000** files and **10 GB** uncompressed total. Large Tumblr exports (~5 GB, ~15k files) fit comfortably within these caps.
+
 > **Hybrid archives:** If both `posts/posts.xml` and `posts/html/*.html` are present, tumbl will refuse to start. Remove one layout—keep XML for the modern export, or keep HTML for the legacy layout.
 
 ## tumblr-utils backup (Format C)

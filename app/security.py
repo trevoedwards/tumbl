@@ -12,6 +12,8 @@ from flask import Response
 logger = logging.getLogger(__name__)
 
 POST_ID_RE = re.compile(r"^\d+$")
+MAX_QUERY_LENGTH = 500
+MAX_TAG_LENGTH = 200
 PUBLIC_INDEX_ERROR = "Archive index could not be built. Check server logs for details."
 
 CONTENT_SECURITY_POLICY = (
@@ -31,6 +33,17 @@ CONTENT_SECURITY_POLICY = (
 
 def is_valid_post_id(post_id: str) -> bool:
     return bool(POST_ID_RE.fullmatch(post_id))
+
+
+def clamp_query(value: str | None, *, max_length: int = MAX_QUERY_LENGTH) -> str:
+    if not value:
+        return ""
+    return value.strip()[:max_length]
+
+
+def is_valid_tag(tag: str) -> bool:
+    cleaned = tag.strip()
+    return bool(cleaned) and len(cleaned) <= MAX_TAG_LENGTH and "\x00" not in cleaned
 
 
 def is_path_under(path: Path, root: Path) -> bool:

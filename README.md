@@ -54,6 +54,9 @@ First launch indexes posts in the background (often 20–30 seconds for a few th
 | `CACHE_DIR` | `/app/cache` | Writable directory for the JSON index cache |
 | `BLOG_TITLE` | `MyBlog` | Default blog title (overridable in Settings) |
 | `INDEX_WORKERS` | `4` | Parallel workers when building the index |
+| `BACKGROUND_IMAGE` | _(empty)_ | Optional default background: HTTPS URL or file path under the archive/app root |
+
+See [Security](docs/security.md) for hardening details and operational guidance.
 
 ```yaml
 services:
@@ -94,6 +97,16 @@ export ARCHIVE_PATH=.tumblrbackup  # macOS/Linux
 python -m flask --app app.main run --debug
 ```
 
+```
+tumbl/
+├── app/                  # Flask app, parsers, static assets, templates
+├── docs/                 # export-formats.md, security.md, demo.gif
+├── tests/
+├── docker-compose.yml
+├── Dockerfile
+└── requirements.txt
+```
+
 **Force index rebuild** — delete cache files and restart:
 
 ```bash
@@ -102,6 +115,16 @@ docker compose restart tumbl
 ```
 
 Cache filenames are format-specific (`index-legacy_html.json`, `index-modern_xml.json`, etc.).
+
+**Tests:**
+
+```bash
+docker compose exec tumbl python -m unittest discover -s tests -v
+```
+
+## Security
+
+HTML sanitization, zip guards, path validation, and security headers are documented in **[Security](docs/security.md)**.
 
 ## Roadmap
 
