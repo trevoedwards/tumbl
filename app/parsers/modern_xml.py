@@ -9,12 +9,11 @@ import xml.etree.ElementTree as ET
 from collections.abc import Callable
 from pathlib import Path
 
+from app.media_resolve import build_media_index, find_local_media, media_url
 from app.parsers.base import PostMeta, PostType, sort_posts
 from app.post_metadata import extract_from_xml_post, merge_metadata
 
 logger = logging.getLogger(__name__)
-
-MEDIA_EXTENSIONS = (".jpg", ".jpeg", ".png", ".gif", ".webp", ".mp4", ".mov", ".mp3", ".m4a")
 
 
 def _text_content(element: ET.Element | None) -> str:
@@ -33,47 +32,19 @@ def _inner_html(element: ET.Element | None) -> str:
     return "".join(parts).strip()
 
 
-def _find_local_media(media_dir: Path, post_id: str) -> list[Path]:
-    if not media_dir.is_dir():
-        return []
-
-    candidates: list[Path] = []
-    for path in media_dir.iterdir():
-        if not path.is_file():
-            continue
-        name = path.name
-        if name == f"{post_id}{path.suffix}":
-            candidates.append(path)
-        elif name.startswith(f"{post_id}_") and path.suffix.lower() in MEDIA_EXTENSIONS:
-            candidates.append(path)
-
-    deduped: list[Path] = []
-    seen_stems: set[str] = set()
-    for path in sorted(candidates, key=lambda p: p.name):
-        stem = path.stem
-        if "_" in stem:
-            suffix = stem.rsplit("_", 1)[-1]
-            if suffix.isdigit() and int(suffix) % 2 == 1:
-                continue
-        if stem in seen_stems:
-            continue
-        seen_stems.add(stem)
-        deduped.append(path)
-
-    return deduped
-
-
-def _media_url(path: Path) -> str:
-    return f"/media/{path.name}"
-
-
-def _render_photo_post(post_el: ET.Element, post_id: str, media_dir: Path) -> str:
+def _render_photo_post(
+    post_el: ET.Element,
+    post_id: str,
+    media_dir: Path,
+    *,
+    media_index: dict | None = None,
+) -> str:
     parts: list[str] = []
-    local_files = _find_local_media(media_dir, post_id)
+    local_files = find_local_media(media_dir, post_id, media_index=media_index)
 
     if local_files:
         for media_path in local_files:
-            parts.append(f'<img src="{_media_url(media_path)}" alt="">')
+            parts.append(f'<img src="{media_url(media_path)}" alt="">')
     else:
         for photo_url in post_el.findall("photo-url"):
             url = (photo_url.text or "").strip()
@@ -136,13 +107,19 @@ def _render_conversation_post(post_el: ET.Element) -> str:
     return "\n".join(parts)
 
 
-def _render_audio_post(post_el: ET.Element, post_id: str, media_dir: Path) -> str:
+def _render_audio_post(
+    post_el: ET.Element,
+    post_id: str,
+    media_dir: Path,
+    *,
+    media_index: dict | None = None,
+) -> str:
     parts: list[str] = []
-    local_files = _find_local_media(media_dir, post_id)
+    local_files = find_local_media(media_dir, post_id, media_index=media_index)
     audio_file = next((p for p in local_files if p.suffix.lower() in {".mp3", ".m4a"}), None)
     if audio_file:
         parts.append(
-            f'<audio controls preload="metadata" src="{_media_url(audio_file)}"></audio>'
+            f'<audio controls preload="metadata" src="{media_url(audio_file)}"></audio>'
         )
     else:
         player = _inner_html(post_el.find("audio-player"))
@@ -155,14 +132,20 @@ def _render_audio_post(post_el: ET.Element, post_id: str, media_dir: Path) -> st
     return "\n".join(parts)
 
 
-def _render_video_post(post_el: ET.Element, post_id: str, media_dir: Path) -> str:
+def _render_video_post(
+    post_el: ET.Element,
+    post_id: str,
+    media_dir: Path,
+    *,
+    media_index: dict | None = None,
+) -> str:
     parts: list[str] = []
-    local_files = _find_local_media(media_dir, post_id)
+    local_files = find_local_media(media_dir, post_id, media_index=media_index)
     video_file = next((p for p in local_files if p.suffix.lower() in {".mp4", ".mov"}), None)
     if video_file:
         parts.append(
             f'<div class="video-embed"><video controls preload="metadata" '
-            f'src="{_media_url(video_file)}"></video></div>'
+            f'src="{media_url(video_file)}"></video></div>'
         )
     else:
         player = _inner_html(post_el.find("video-player"))
@@ -201,17 +184,29 @@ def _xml_type_to_post_type(xml_type: str, body_html: str) -> PostType:
     return "text"
 
 
-def _render_post_body(post_el: ET.Element, post_id: str, media_dir: Path) -> str:
+def _render_post_body(
+    post_el: ET.Element,
+    post_id: str,
+    media_dir: Path,
+    *,
+    media_index: dict | None = None,
+) -> str:
     xml_type = post_el.get("type", "regular")
 
     renderers = {
-        "photo": lambda: _render_photo_post(post_el, post_id, media_dir),
+        "photo": lambda: _render_photo_post(
+            post_el, post_id, media_dir, media_index=media_index
+        ),
         "regular": lambda: _render_regular_post(post_el),
         "quote": lambda: _render_quote_post(post_el),
         "link": lambda: _render_link_post(post_el),
         "conversation": lambda: _render_conversation_post(post_el),
-        "audio": lambda: _render_audio_post(post_el, post_id, media_dir),
-        "video": lambda: _render_video_post(post_el, post_id, media_dir),
+        "audio": lambda: _render_audio_post(
+            post_el, post_id, media_dir, media_index=media_index
+        ),
+        "video": lambda: _render_video_post(
+            post_el, post_id, media_dir, media_index=media_index
+        ),
         "answer": lambda: _render_answer_post(post_el),
     }
 
@@ -228,6 +223,7 @@ def parse_posts_xml(archive_root: Path, *, max_bytes: int = 512 * 1024 * 1024) -
         )
 
     media_dir = archive_root / "media"
+    media_index = build_media_index(media_dir)
 
     tree = ET.parse(posts_xml)
     root = tree.getroot()
@@ -243,7 +239,9 @@ def parse_posts_xml(archive_root: Path, *, max_bytes: int = 512 * 1024 * 1024) -
 
         timestamp = post_el.get("date", "").strip()
         tags = [tag.text.strip() for tag in post_el.findall("tag") if tag.text]
-        body_html = _render_post_body(post_el, post_id, media_dir)
+        body_html = _render_post_body(
+            post_el, post_id, media_dir, media_index=media_index
+        )
         xml_type = post_el.get("type", "regular")
         xml_url, xml_parent_url, xml_parent_name = extract_from_xml_post(post_el)
         tumblr_url, reblog_parent_url, reblog_parent_name = merge_metadata(

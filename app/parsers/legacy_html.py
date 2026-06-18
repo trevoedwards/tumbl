@@ -12,6 +12,7 @@ from pathlib import Path
 
 from bs4 import BeautifulSoup
 
+from app.media_resolve import build_media_index, resolve_post_media_refs
 from app.parsers.base import PostMeta, PostType, sort_posts
 from app.post_metadata import merge_metadata
 
@@ -78,7 +79,12 @@ def _process_body_html(raw_html: str) -> str:
     return content
 
 
-def parse_post_file(path: Path, archive_root: Path) -> PostMeta | None:
+def parse_post_file(
+    path: Path,
+    archive_root: Path,
+    *,
+    media_index: dict | None = None,
+) -> PostMeta | None:
     try:
         raw = path.read_text(encoding="utf-8")
     except OSError:
@@ -102,6 +108,12 @@ def parse_post_file(path: Path, archive_root: Path) -> PostMeta | None:
 
     raw_body = body.decode_contents()
     body_html = _process_body_html(raw_body)
+    body_html = resolve_post_media_refs(
+        body_html,
+        path.stem,
+        archive_root / "media",
+        media_index=media_index,
+    )
     post_type = _infer_post_type(body_html)
 
     post_id = path.stem
@@ -156,9 +168,12 @@ def build_index(
     posts: list[PostMeta] = []
     completed = 0
 
+    media_index = build_media_index(archive_root / "media")
+
     with ThreadPoolExecutor(max_workers=worker_count) as executor:
         futures = {
-            executor.submit(parse_post_file, path, archive_root): path for path in paths
+            executor.submit(parse_post_file, path, archive_root, media_index=media_index): path
+            for path in paths
         }
         for future in as_completed(futures):
             post = future.result()

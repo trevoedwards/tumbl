@@ -24,8 +24,8 @@ class PostMetadataTests(unittest.TestCase):
 
     def test_blog_name_from_url(self) -> None:
         self.assertEqual(
-            blog_name_from_url("https://wiresandwaves.tumblr.com/post/1/x"),
-            "wiresandwaves",
+            blog_name_from_url("https://example-blog.tumblr.com/post/1/x"),
+            "example-blog",
         )
 
     def test_extract_from_body_html_finds_reblog_context(self) -> None:

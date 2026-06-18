@@ -24,7 +24,7 @@ from app.parsers.tumblr_utils import build_index as build_tumblr_utils_index
 
 logger = logging.getLogger(__name__)
 
-CACHE_SCHEMA_VERSION = 2
+CACHE_SCHEMA_VERSION = 4
 
 _BUILDERS = {
     ArchiveFormat.LEGACY_HTML: build_legacy_index,
