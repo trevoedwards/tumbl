@@ -58,16 +58,7 @@ First launch indexes posts in the background (often 20–30 seconds for a few th
 | `INDEX_WORKERS` | `4` | Parallel workers when building the index |
 | `BACKGROUND_IMAGE` | _(empty)_ | Optional default background: HTTPS URL or file path under the archive/app root |
 
-See [Security](docs/security.md) for hardening details and operational guidance.
-
-```yaml
-services:
-  tumbl:
-    volumes:
-      - /path/to/my/export:/archive:ro
-    environment:
-      - BLOG_TITLE=My Cool Blog
-```
+See [docker-compose.yml](docker-compose.yml) example.
 
 ## How it works
 
