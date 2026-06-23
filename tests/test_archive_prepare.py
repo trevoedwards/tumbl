@@ -60,6 +60,15 @@ class ArchivePrepareTests(unittest.TestCase):
 
         self.assertFalse((self.archive_root / "evil.txt").exists())
 
+    def test_rejects_zip_slip_backslash_paths(self) -> None:
+        buffer = io.BytesIO()
+        with zipfile.ZipFile(buffer, "w") as archive:
+            archive.writestr("..\\..\\evil.txt", "bad")
+        (self.archive_root / "posts.zip").write_bytes(buffer.getvalue())
+
+        with self.assertRaises(ValueError):
+            prepare_archive(self.archive_root)
+
     @patch.object(archive_prepare, "MAX_ZIP_UNCOMPRESSED_BYTES", 100)
     def test_rejects_oversized_zip(self) -> None:
         buffer = io.BytesIO()

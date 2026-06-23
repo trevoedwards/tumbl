@@ -49,6 +49,11 @@ class WordPressWxrTests(unittest.TestCase):
         self.assertEqual(local, "2020-03-03 12:00:00")
         self.assertEqual(gmt, "2020-03-03 12:00:00")
 
+    def test_parse_post_datetime_invalid_date_falls_back(self) -> None:
+        local, gmt = parse_post_datetime("February 31st, 2020 12:00pm")
+        self.assertEqual(local, "1970-01-01 12:00:00")
+        self.assertEqual(gmt, "1970-01-01 12:00:00")
+
     def test_rewrite_media_urls(self) -> None:
         html = '<img src="/media/photo.jpg"><video src="/media/clip.mp4"></video>'
         rewritten = rewrite_media_urls(html, "https://cdn.example.com/media")

@@ -13,12 +13,17 @@ MAX_ZIP_FILES = 100_000
 MAX_ZIP_UNCOMPRESSED_BYTES = 10 * 1024 * 1024 * 1024
 
 
+def _normalize_zip_path(name: str) -> str:
+    return name.replace("\\", "/")
+
+
 def _is_safe_zip_member(name: str, destination: Path) -> bool:
-    if not name or name.startswith("/") or PurePosixPath(name).is_absolute():
+    normalized = _normalize_zip_path(name)
+    if not normalized or normalized.startswith("/") or PurePosixPath(normalized).is_absolute():
         return False
-    if ".." in PurePosixPath(name).parts:
+    if ".." in PurePosixPath(normalized).parts:
         return False
-    target = (destination / name).resolve()
+    target = (destination / normalized).resolve()
     dest_root = destination.resolve()
     return target == dest_root or dest_root in target.parents
 
@@ -56,15 +61,13 @@ def prepare_archive(archive_root: Path) -> None:
 
     posts_dir = archive_root / "posts"
     posts_xml = posts_dir / "posts.xml"
-    nested_posts_zip = posts_dir / "posts.zip"
+    if posts_xml.is_file():
+        return
 
+    nested_posts_zip = posts_dir / "posts.zip"
     root_zip = archive_root / "posts.zip"
-    if root_zip.is_file() and not posts_dir.is_dir():
-        _extract_zip(root_zip, posts_dir)
-    elif root_zip.is_file() and posts_dir.is_dir() and not posts_xml.is_file():
-        if not any(posts_dir.iterdir()):
-            _extract_zip(root_zip, posts_dir)
-        elif nested_posts_zip.is_file() and not posts_xml.is_file():
-            _extract_zip(nested_posts_zip, posts_dir)
-    elif nested_posts_zip.is_file() and not posts_xml.is_file():
+
+    if nested_posts_zip.is_file():
         _extract_zip(nested_posts_zip, posts_dir)
+    elif root_zip.is_file():
+        _extract_zip(root_zip, posts_dir)

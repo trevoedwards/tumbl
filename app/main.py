@@ -427,6 +427,8 @@ def create_app() -> Flask:
         search = clamp_query(request.args.get("q", "")) or None
         year = request.args.get("year", type=int)
         month = request.args.get("month", type=int)
+        if month is not None and year is None:
+            return jsonify({"error": "year is required when month is set"}), 400
         page = request.args.get("page", 1, type=int)
         posts = _filtered_posts(
             tag=tag,

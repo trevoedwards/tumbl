@@ -85,9 +85,13 @@ def parse_post_datetime(timestamp: str) -> tuple[str, str]:
                     hour += 12
                 elif ampm == "am" and hour == 12:
                     hour = 0
-            dt = datetime(year, month, day, hour, minute, 0, tzinfo=timezone.utc)
-            formatted = dt.strftime("%Y-%m-%d %H:%M:%S")
-            return formatted, formatted
+            try:
+                dt = datetime(year, month, day, hour, minute, 0, tzinfo=timezone.utc)
+            except ValueError:
+                pass
+            else:
+                formatted = dt.strftime("%Y-%m-%d %H:%M:%S")
+                return formatted, formatted
 
     parsed = parse_timestamp(timestamp)
     if parsed:
