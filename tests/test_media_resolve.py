@@ -64,6 +64,14 @@ class MediaResolveTests(unittest.TestCase):
             fixed = resolve_post_media_refs(body, "309396265", media_dir)
             self.assertEqual(fixed, body)
 
+    def test_resolve_post_media_refs_handles_unquoted_src(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            media_dir = Path(tmp)
+            (media_dir / "152638647575.jpg").write_bytes(b"j")
+            body = '<img src=/media/309396265.png alt="">'
+            fixed = resolve_post_media_refs(body, "152638647575", media_dir)
+            self.assertIn('src="/media/152638647575.jpg"', fixed)
+
     def test_resolve_post_media_refs_cycles_through_local_files(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             media_dir = Path(tmp)

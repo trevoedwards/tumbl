@@ -27,7 +27,7 @@ VIDEO_EMBED_RE = re.compile(
     re.IGNORECASE,
 )
 STRAY_EMBED_SUFFIX_RE = re.compile(r"</embed>['\"];?", re.IGNORECASE)
-MEDIA_PATH_RE = re.compile(r"\.\./\.\./media/")
+MEDIA_PATH_RE = re.compile(r"(?:\.\./)+media/")
 YOUTUBE_IFRAME_RE = re.compile(r"""id=["']youtube_iframe["']""", re.I)
 VIDEO_EMBED_TYPE_RE = re.compile(r"""<embed[^>]+type=["']video/""", re.I)
 AUDIO_EMBED_TYPE_RE = re.compile(r"""<embed[^>]+type=["']audio/""", re.I)

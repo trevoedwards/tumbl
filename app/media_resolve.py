@@ -7,7 +7,10 @@ from pathlib import Path
 
 MEDIA_EXTENSIONS = (".jpg", ".jpeg", ".png", ".gif", ".webp", ".mp4", ".mov", ".mp3", ".m4a")
 
-IMG_SRC_RE = re.compile(r"""src=(["'])(/media/([^"']+))\1""", re.IGNORECASE)
+IMG_SRC_RE = re.compile(
+    r"""src=(["']?)(/media/([^"'>\s]+))\1""",
+    re.IGNORECASE,
+)
 
 
 def _post_id_from_media_name(name: str) -> str | None:
@@ -111,7 +114,7 @@ def resolve_post_media_refs(
 
     def replacer(match: re.Match[str]) -> str:
         nonlocal local_idx
-        quote = match.group(1)
+        quote = match.group(1) or '"'
         name = match.group(3)
         if name in local_name_set:
             return match.group(0)
