@@ -18,6 +18,9 @@ class TimestampParseTests(unittest.TestCase):
 
     def test_invalid_timestamp(self) -> None:
         self.assertIsNone(parse_timestamp("not a date"))
+        self.assertIsNone(parse_timestamp("February 30th, 2020"))
+        self.assertIsNone(parse_timestamp("April 31st, 2020"))
+        self.assertIsNone(parse_timestamp("January 0th, 2020"))
 
     def test_month_label(self) -> None:
         self.assertEqual(month_label(2017, 4), "April 2017")

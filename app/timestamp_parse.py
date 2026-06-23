@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import re
 from calendar import month_name, month_abbr
+from datetime import datetime
 
 MONTHS = {
     name.lower(): index
@@ -31,7 +32,13 @@ def parse_timestamp(timestamp: str) -> tuple[int, int, int] | None:
     if not month:
         return None
 
-    return int(match.group("year")), month, int(match.group("day"))
+    year = int(match.group("year"))
+    day = int(match.group("day"))
+    try:
+        datetime(year, month, day)
+    except ValueError:
+        return None
+    return year, month, day
 
 
 def month_label(year: int, month: int) -> str:

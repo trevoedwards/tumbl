@@ -61,6 +61,50 @@ class TumblrUtilsParserTests(unittest.TestCase):
         self.assertEqual(len(posts), 1)
         self.assertEqual(posts[0].id, "555")
 
+    def test_body_fallback_excludes_footer(self) -> None:
+        no_article = textwrap.dedent(
+            """\
+            <!DOCTYPE html>
+            <html>
+            <body>
+                <img src="media/777.jpg" alt="">
+                <p>No article wrapper</p>
+            <footer>
+                <time>May 5th, 2019 1:00pm</time>
+                <a href="/tagged/test">#test</a>
+            </footer>
+            </body>
+            </html>
+            """
+        )
+        (self.archive_root / "posts" / "777.html").write_text(no_article, encoding="utf-8")
+        post = parse_post_file(self.archive_root / "posts" / "777.html", self.archive_root)
+        assert post is not None
+        self.assertNotIn("<footer", post.body_html)
+        self.assertNotIn("<time>", post.body_html)
+        self.assertEqual(post.timestamp, "May 5th, 2019 1:00pm")
+        self.assertEqual(post.tags, ["test"])
+
+    def test_tags_deduplicate_case_insensitive(self) -> None:
+        tagged = textwrap.dedent(
+            """\
+            <!DOCTYPE html>
+            <html>
+            <body>
+            <article><p>Tagged post</p></article>
+            <footer>
+                <span class="tag">Nature</span>
+                <a href="/tagged/nature">#nature</a>
+            </footer>
+            </body>
+            </html>
+            """
+        )
+        (self.archive_root / "posts" / "888.html").write_text(tagged, encoding="utf-8")
+        post = parse_post_file(self.archive_root / "posts" / "888.html", self.archive_root)
+        assert post is not None
+        self.assertEqual(post.tags, ["Nature"])
+
 
 if __name__ == "__main__":
     unittest.main()

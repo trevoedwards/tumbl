@@ -136,7 +136,7 @@ def get_or_build_index(
 
     if not force_rebuild:
         cached = load_cached_index(writable_cache, fmt, archive_root)
-        if cached:
+        if cached is not None:
             logger.info("Loaded %s posts from cache", len(cached))
             if on_progress:
                 on_progress(len(cached), len(cached))

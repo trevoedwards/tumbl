@@ -7,6 +7,7 @@ import tempfile
 import textwrap
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from app.archive_detect import ArchiveFormat, archive_fingerprint
 from app.parser import cache_meta_path, cache_path, get_or_build_index, load_cached_index
@@ -106,6 +107,31 @@ class CacheInvalidationTests(unittest.TestCase):
 
         rebuilt = get_or_build_index(legacy_root, cache_root=legacy_cache)
         self.assertTrue(any("older edited" in post.body_html for post in rebuilt))
+
+    def test_empty_cache_is_loaded_not_rebuilt(self) -> None:
+        empty_xml = textwrap.dedent(
+            """\
+            <?xml version="1.0" encoding="UTF-8"?>
+            <tumblr version="1.0">
+              <posts></posts>
+            </tumblr>
+            """
+        )
+        empty_root = Path(self.temp_dir.name) / "empty"
+        posts_dir = empty_root / "posts"
+        posts_dir.mkdir(parents=True)
+        (posts_dir / "posts.xml").write_text(empty_xml, encoding="utf-8")
+        (empty_root / "media").mkdir()
+        empty_cache = Path(self.temp_dir.name) / "empty-cache"
+
+        first = get_or_build_index(empty_root, cache_root=empty_cache)
+        self.assertEqual(first, [])
+
+        with patch("app.parser.build_index") as build_index_mock:
+            second = get_or_build_index(empty_root, cache_root=empty_cache)
+            build_index_mock.assert_not_called()
+
+        self.assertEqual(second, [])
 
 
 if __name__ == "__main__":

@@ -42,19 +42,10 @@ def parse_post_file(
         return None
 
     soup = BeautifulSoup(raw, "lxml")
-    article = soup.find("article")
     footer = soup.find("footer")
-
-    if article:
-        raw_body = article.decode_contents()
-    else:
-        body = soup.find("body")
-        if not body:
-            return None
-        raw_body = body.decode_contents()
-
     timestamp = ""
     tags: list[str] = []
+    tag_lower: set[str] = set()
 
     if footer:
         time_el = footer.find("time")
@@ -65,12 +56,25 @@ def parse_post_file(
             if ts_el:
                 timestamp = ts_el.get_text(strip=True)
         for tag_el in footer.find_all("span", class_="tag"):
-            tags.append(tag_el.get_text(strip=True))
+            label = tag_el.get_text(strip=True)
+            if label and label.lower() not in tag_lower:
+                tags.append(label)
+                tag_lower.add(label.lower())
         for link in footer.find_all("a", href=TAGGED_LINK_RE):
             label = link.get_text(strip=True).lstrip("#")
-            if label and label not in tags:
+            if label and label.lower() not in tag_lower:
                 tags.append(label)
+                tag_lower.add(label.lower())
         footer.decompose()
+
+    article = soup.find("article")
+    if article:
+        raw_body = article.decode_contents()
+    else:
+        body = soup.find("body")
+        if not body:
+            return None
+        raw_body = body.decode_contents()
 
     body_html = _process_body_html(_rewrite_media_paths(raw_body))
     body_html = resolve_post_media_refs(
