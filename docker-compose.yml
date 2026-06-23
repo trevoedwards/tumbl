@@ -13,6 +13,11 @@ services:
       - BLOG_TITLE=${BLOG_TITLE:-MyBlog}
       - INDEX_WORKERS=${INDEX_WORKERS:-4}
       - BACKGROUND_IMAGE=${BACKGROUND_IMAGE:-}
+      # Optional WordPress WXR export (disabled by default):
+      # - WORDPRESS_EXPORT_ENABLED=${WORDPRESS_EXPORT_ENABLED:-false}
+      # - WORDPRESS_EXPORT_AUTHOR=${WORDPRESS_EXPORT_AUTHOR:-admin}
+      # - WORDPRESS_EXPORT_SITE_URL=${WORDPRESS_EXPORT_SITE_URL:-https://example.wordpress.com}
+      # - WORDPRESS_EXPORT_MEDIA_BASE_URL=${WORDPRESS_EXPORT_MEDIA_BASE_URL:-}
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8862/healthz')"]
       interval: 10s

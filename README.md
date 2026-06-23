@@ -23,6 +23,7 @@ No account required, no data sent anywhere.
 - Keyboard shortcuts: **`/`** search, **`j`/`k`** navigate posts, **`?`** show hints
 - **View on Tumblr** links and reblog context when export metadata includes them
 - Legacy, modern, and tumblr-utils export formats
+- Optional WordPress WXR export for migrating offline backups to WordPress
 - Auto-extract `posts.zip`, background indexing with progress, persistent cache
 - Docker-first, fully offline
 
@@ -58,6 +59,17 @@ First launch indexes posts in the background (often 20–30 seconds for a few th
 | `INDEX_WORKERS` | `4` | Parallel workers when building the index |
 | `BACKGROUND_IMAGE` | _(empty)_ | Optional default background: HTTPS URL or file path under the archive/app root |
 
+### Optional: WordPress export
+
+Disabled by default. See **[WordPress export](docs/wordpress-export.md)** for import steps and media notes.
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `WORDPRESS_EXPORT_ENABLED` | `false` | Enable WXR export at `/export/wordpress.xml` |
+| `WORDPRESS_EXPORT_AUTHOR` | `admin` | Author login for imported posts |
+| `WORDPRESS_EXPORT_SITE_URL` | `https://example.wordpress.com` | Target WordPress site URL |
+| `WORDPRESS_EXPORT_MEDIA_BASE_URL` | _(empty)_ | Optional public base URL for archive media |
+
 See [docker-compose.yml](docker-compose.yml) example.
 
 ## How it works
@@ -75,6 +87,7 @@ flowchart TD
     Index --> Flask["Flask + Gunicorn"]
     Flask --> Feed["Feed, search, tags, archive"]
     Flask --> Media["/media/ static files"]
+    Flask --> WXR["Optional WXR export"]
 ```
 
 On startup, tumbl detects the export format, builds a normalized post index (cached to disk), and serves paginated views plus local media from the archive.
@@ -93,7 +106,7 @@ python -m flask --app app.main run --debug
 ```
 tumbl/
 ├── app/                  # Flask app, parsers, static assets, templates
-├── docs/                 # export-formats.md, security.md, performance.md, demo.gif
+├── docs/                 # export-formats.md, wordpress-export.md, security.md, performance.md
 ├── tests/
 ├── docker-compose.yml
 ├── Dockerfile
@@ -128,6 +141,7 @@ HTML sanitization, zip guards, path validation, and security headers are documen
 - [x] Full-text search, tag cloud, date archive
 - [x] tumblr-utils support, auto-extract `posts.zip`, photo lightbox
 - [x] Post type filters, async indexing, theme customization
+- [x] Optional WordPress WXR export for offline Tumblr backups
 
 ## Contributing
 

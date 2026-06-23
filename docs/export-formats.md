@@ -71,3 +71,9 @@ Each post is read from `posts/{id}.html`. Local media is resolved from the `medi
 ## Out of scope
 
 The privacy/account JSON download from Tumblr settings is **not** supported—tumbl expects a full blog media export with HTML or XML post data.
+
+## Exporting to WordPress
+
+All three supported input formats can be converted to a WordPress WXR import file when optional export is enabled. This is useful if you have an offline backup but no live Tumblr account for WordPress.com's [Tumblr importer](https://wordpress.com/support/import/import-from-tumblr/).
+
+See **[WordPress export](wordpress-export.md)** for configuration, import steps, and media limitations.

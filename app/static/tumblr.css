@@ -747,6 +747,21 @@ blockquote {
     text-decoration: underline;
 }
 
+.settings-export-link {
+    display: inline-block;
+    padding: 10px 16px;
+    border-radius: 3px;
+    background: var(--link);
+    color: #fff;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.settings-export-link:hover {
+    opacity: 0.9;
+    color: #fff;
+}
+
 .settings-saved {
     margin: 0;
     font-size: 13px;

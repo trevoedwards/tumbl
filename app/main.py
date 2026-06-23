@@ -12,6 +12,7 @@ from flask import (
     Flask,
     abort,
     jsonify,
+    make_response,
     redirect,
     render_template,
     request,
@@ -56,6 +57,13 @@ _index_lock = threading.Lock()
 _posts_index: list[PostMeta] | None = None
 _post_ids: set[str] | None = None
 _index_error: str | None = None
+
+
+def _env_flag(name: str, *, default: bool = False) -> bool:
+    value = os.environ.get(name, "").strip().lower()
+    if not value:
+        return default
+    return value in {"1", "true", "yes", "on"}
 
 
 @dataclass
@@ -153,6 +161,28 @@ def create_app() -> Flask:
     app.config["BACKGROUND_IMAGE_PATH"] = background_image_path
     app.config["BACKGROUND_IMAGE_URL"] = background_image_url
 
+    wordpress_export_enabled = _env_flag("WORDPRESS_EXPORT_ENABLED")
+    wordpress_export_author = os.environ.get("WORDPRESS_EXPORT_AUTHOR", "admin").strip() or "admin"
+    wordpress_export_site_url = os.environ.get(
+        "WORDPRESS_EXPORT_SITE_URL", "https://example.wordpress.com"
+    ).strip()
+    wordpress_export_media_base_url = os.environ.get(
+        "WORDPRESS_EXPORT_MEDIA_BASE_URL", ""
+    ).strip()
+    if wordpress_export_media_base_url and not is_safe_http_url(
+        wordpress_export_media_base_url
+    ):
+        logger.warning(
+            "Ignoring invalid WORDPRESS_EXPORT_MEDIA_BASE_URL: %s",
+            wordpress_export_media_base_url,
+        )
+        wordpress_export_media_base_url = ""
+
+    app.config["WORDPRESS_EXPORT_ENABLED"] = wordpress_export_enabled
+    app.config["WORDPRESS_EXPORT_AUTHOR"] = wordpress_export_author
+    app.config["WORDPRESS_EXPORT_SITE_URL"] = wordpress_export_site_url
+    app.config["WORDPRESS_EXPORT_MEDIA_BASE_URL"] = wordpress_export_media_base_url
+
     @app.after_request
     def _add_security_headers(response):
         return apply_security_headers(response)
@@ -173,6 +203,7 @@ def create_app() -> Flask:
             "github_repo_url": GITHUB_REPO_URL,
             "post_types": ["audio", "photo", "text", "video"],
             "nav_active_type": active_type,
+            "wordpress_export_enabled": app.config.get("WORDPRESS_EXPORT_ENABLED", False),
         }
 
     def _get_index() -> list[PostMeta]:
@@ -482,6 +513,30 @@ def create_app() -> Flask:
                 return jsonify({"ready": False, **progress}), 200
             post_count = len(_posts_index)
         return jsonify({"ready": True, "posts": post_count}), 200
+
+    if wordpress_export_enabled:
+
+        @app.route("/export/wordpress.xml")
+        def export_wordpress() -> object:
+            loading = _loading_or_ready()
+            if loading:
+                return loading
+            from app.exporters.wordpress_wxr import generate_wxr
+
+            media_base = app.config.get("WORDPRESS_EXPORT_MEDIA_BASE_URL") or None
+            xml = generate_wxr(
+                _get_index(),
+                site_url=app.config["WORDPRESS_EXPORT_SITE_URL"],
+                author=app.config["WORDPRESS_EXPORT_AUTHOR"],
+                blog_title=blog_title,
+                media_base_url=media_base,
+            )
+            response = make_response(xml)
+            response.headers["Content-Type"] = "application/rss+xml; charset=utf-8"
+            response.headers["Content-Disposition"] = (
+                'attachment; filename="tumblr-wordpress-export.xml"'
+            )
+            return response
 
     @app.route("/background")
     def background_image() -> object:

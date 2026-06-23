@@ -107,6 +107,21 @@
             </div>
         </fieldset>
 
+        {% if wordpress_export_enabled %}
+        <fieldset class="settings-group">
+            <legend class="settings-group-title">WordPress export</legend>
+            <p class="settings-field-desc">
+                Download a WordPress WXR import file generated from this archive.
+                Import it in WordPress under <strong>Tools → Import → WordPress</strong>.
+            </p>
+            <p class="settings-field-controls">
+                <a class="settings-export-link" href="{{ url_for('export_wordpress') }}">
+                    Download WordPress export (.xml)
+                </a>
+            </p>
+        </fieldset>
+        {% endif %}
+
         <p class="settings-saved" id="settings-saved" hidden>Saved.</p>
     </form>
 </section>
