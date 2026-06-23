@@ -66,8 +66,8 @@ class PostFilterTests(unittest.TestCase):
     def test_filter_by_type_invalid_returns_empty(self) -> None:
         self.assertEqual(filter_by_type(self.posts, "invalid"), [])
         self.assertEqual(
-            apply_filters(self.posts, post_type="invalid"),
-            [],
+            [post.id for post in apply_filters(self.posts, post_type="invalid")],
+            ["1", "2", "3"],
         )
 
     def test_apply_filters_combine_search_type_and_date(self) -> None:

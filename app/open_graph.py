@@ -9,7 +9,10 @@ from app.parsers.base import PostMeta
 from app.post_filters import strip_html
 from app.security import is_safe_http_url
 
-IMG_SRC_RE = re.compile(r"""<img[^>]+src=["']([^"']+)["']""", re.IGNORECASE)
+IMG_SRC_RE = re.compile(
+    r"""<img\b[^>]*?\bsrc=(["']?)([^"'>\s]+)\1""",
+    re.IGNORECASE,
+)
 MAX_DESCRIPTION_LENGTH = 200
 
 
@@ -18,7 +21,7 @@ def preview_image_src(post: PostMeta) -> str | None:
     match = IMG_SRC_RE.search(post.body_html)
     if not match:
         return None
-    src = match.group(1).strip()
+    src = match.group(2).strip()
     return src or None
 
 

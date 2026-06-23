@@ -80,9 +80,7 @@ def apply_filters(
         result = filter_by_search(result, search)
     if tag:
         result = filter_by_tag(result, tag)
-    if post_type:
-        if not is_valid_post_type(post_type):
-            return []
+    if post_type and is_valid_post_type(post_type):
         result = filter_by_type(result, post_type)
     if year is not None:
         result = filter_by_date(result, year, month)
