@@ -21,7 +21,7 @@ class MediaResolveTests(unittest.TestCase):
             (media_dir / "99999.png").write_bytes(b"x")
 
             found = find_local_media(media_dir, "12345")
-            self.assertEqual([path.name for path in found], ["12345.jpg", "12345_0.png"])
+            self.assertEqual([path.name for path in found], ["12345.jpg", "12345_0.png", "12345_1.png"])
 
     def test_build_media_index_groups_files_by_post_id(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -72,20 +72,38 @@ class MediaResolveTests(unittest.TestCase):
             fixed = resolve_post_media_refs(body, "152638647575", media_dir)
             self.assertIn('src="/media/152638647575.jpg"', fixed)
 
+    def test_resolve_post_media_refs_keeps_photoset_indices(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            media_dir = Path(tmp)
+            for idx in range(4):
+                (media_dir / f"100110448605_{idx}.gif").write_bytes(b"x")
+            body = "".join(
+                f'<img src="/media/100110448605_{idx}.gif" alt="">'
+                for idx in range(4)
+            )
+            fixed = resolve_post_media_refs(body, "100110448605", media_dir)
+            self.assertEqual(fixed, body)
+
     def test_resolve_post_media_refs_cycles_through_local_files(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             media_dir = Path(tmp)
             (media_dir / "119248693340_0.gif").write_bytes(b"a")
+            (media_dir / "119248693340_1.gif").write_bytes(b"a1")
             (media_dir / "119248693340_2.gif").write_bytes(b"b")
+            (media_dir / "119248693340_3.gif").write_bytes(b"b1")
             (media_dir / "119248693340_4.gif").write_bytes(b"c")
+            (media_dir / "119248693340_5.gif").write_bytes(b"c1")
             body = "".join(
                 f'<img src="/media/309396265.png" alt="">' for _ in range(6)
             )
             fixed = resolve_post_media_refs(body, "119248693340", media_dir)
             self.assertNotIn("309396265.png", fixed)
-            self.assertEqual(fixed.count('src="/media/119248693340_0.gif"'), 2)
-            self.assertEqual(fixed.count('src="/media/119248693340_2.gif"'), 2)
-            self.assertEqual(fixed.count('src="/media/119248693340_4.gif"'), 2)
+            self.assertEqual(fixed.count('src="/media/119248693340_0.gif"'), 1)
+            self.assertEqual(fixed.count('src="/media/119248693340_1.gif"'), 1)
+            self.assertEqual(fixed.count('src="/media/119248693340_2.gif"'), 1)
+            self.assertEqual(fixed.count('src="/media/119248693340_3.gif"'), 1)
+            self.assertEqual(fixed.count('src="/media/119248693340_4.gif"'), 1)
+            self.assertEqual(fixed.count('src="/media/119248693340_5.gif"'), 1)
 
     def test_legacy_parser_rewrites_wrong_export_reference(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

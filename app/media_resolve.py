@@ -23,18 +23,21 @@ def _post_id_from_media_name(name: str) -> str | None:
     return stem.rsplit("_", 1)[0] if "_" in stem else stem
 
 
+def _media_name_belongs_to_post(name: str, post_id: str) -> bool:
+    path = Path(name)
+    if path.suffix.lower() not in MEDIA_EXTENSIONS:
+        return False
+    stem = path.stem
+    return stem == post_id or stem.startswith(f"{post_id}_")
+
+
 def _dedupe_media_paths(candidates: list[Path]) -> list[Path]:
     deduped: list[Path] = []
-    seen_stems: set[str] = set()
+    seen_names: set[str] = set()
     for path in sorted(candidates, key=lambda item: item.name):
-        stem = path.stem
-        if "_" in stem:
-            suffix = stem.rsplit("_", 1)[-1]
-            if suffix.isdigit() and int(suffix) % 2 == 1:
-                continue
-        if stem in seen_stems:
+        if path.name in seen_names:
             continue
-        seen_stems.add(stem)
+        seen_names.add(path.name)
         deduped.append(path)
     return deduped
 
@@ -107,7 +110,23 @@ def resolve_post_media_refs(
         return body_html
 
     ref_names = [match.group(3) for match in matches]
-    if all(name in local_name_set for name in ref_names):
+
+    def _ref_is_valid(name: str) -> bool:
+        if name in local_name_set:
+            return True
+        if not _media_name_belongs_to_post(name, post_id):
+            return False
+        candidate = media_dir / name
+        if candidate.is_file():
+            return True
+        if media_dir.is_dir():
+            return any(
+                path.is_file() and path.name.lower() == name.lower()
+                for path in media_dir.iterdir()
+            )
+        return False
+
+    if all(_ref_is_valid(name) for name in ref_names):
         return body_html
 
     local_idx = 0
@@ -116,7 +135,7 @@ def resolve_post_media_refs(
         nonlocal local_idx
         quote = match.group(1) or '"'
         name = match.group(3)
-        if name in local_name_set:
+        if _ref_is_valid(name):
             return match.group(0)
         if local_urls:
             url = local_urls[local_idx % len(local_urls)]
