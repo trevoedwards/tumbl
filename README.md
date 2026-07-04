@@ -67,8 +67,14 @@ Disabled by default. See **[WordPress export](docs/wordpress-export.md)** for im
 |----------|---------|-------------|
 | `WORDPRESS_EXPORT_ENABLED` | `false` | Enable WXR export at `/export/wordpress.xml` |
 | `WORDPRESS_EXPORT_AUTHOR` | `admin` | Author login for imported posts |
-| `WORDPRESS_EXPORT_SITE_URL` | `https://example.wordpress.com` | Target WordPress site URL |
+| `WORDPRESS_EXPORT_SITE_URL` | `https://example.com` | Existing WordPress site root URL |
+| `WORDPRESS_EXPORT_URL_TEMPLATE` | `{site_url}/blog/?page={page}#post-{id}` | Post link/GUID template |
+| `WORDPRESS_EXPORT_POSTS_PER_PAGE` | `20` | Posts per feed page for `{page}` in URL template |
 | `WORDPRESS_EXPORT_MEDIA_BASE_URL` | _(empty)_ | Optional public base URL for archive media |
+| `WORDPRESS_EXPORT_MATCH_THEME` | `false` | Fetch target site colors/fonts for export |
+| `WORDPRESS_EXPORT_MINIMAL` | `false` | Strip Tumblr/tumbl branding from export metadata |
+
+Full walkthrough: [docs/wordpress-export.md](docs/wordpress-export.md).
 
 See [docker-compose.yml](docker-compose.yml) example.
 

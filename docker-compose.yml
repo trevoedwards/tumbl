@@ -16,8 +16,12 @@ services:
       # Optional WordPress WXR export (disabled by default):
       # - WORDPRESS_EXPORT_ENABLED=${WORDPRESS_EXPORT_ENABLED:-false}
       # - WORDPRESS_EXPORT_AUTHOR=${WORDPRESS_EXPORT_AUTHOR:-admin}
-      # - WORDPRESS_EXPORT_SITE_URL=${WORDPRESS_EXPORT_SITE_URL:-https://example.wordpress.com}
+      # - WORDPRESS_EXPORT_SITE_URL=${WORDPRESS_EXPORT_SITE_URL:-https://example.com}
+      # - WORDPRESS_EXPORT_URL_TEMPLATE=${WORDPRESS_EXPORT_URL_TEMPLATE:-{site_url}/blog/?page={page}#post-{id}}
+      # - WORDPRESS_EXPORT_POSTS_PER_PAGE=${WORDPRESS_EXPORT_POSTS_PER_PAGE:-20}
       # - WORDPRESS_EXPORT_MEDIA_BASE_URL=${WORDPRESS_EXPORT_MEDIA_BASE_URL:-}
+      # - WORDPRESS_EXPORT_MATCH_THEME=${WORDPRESS_EXPORT_MATCH_THEME:-false}
+      # - WORDPRESS_EXPORT_MINIMAL=${WORDPRESS_EXPORT_MINIMAL:-false}
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8862/healthz')"]
       interval: 10s

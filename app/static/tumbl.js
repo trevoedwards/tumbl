@@ -404,6 +404,61 @@
         }
     }
 
+    function initWordPressExportSettings() {
+        var exportPanel = document.getElementById("wordpress-export-settings");
+        if (!exportPanel) {
+            return;
+        }
+
+        var xmlLink = document.getElementById("wordpress-export-xml-link");
+        var cssLink = document.getElementById("wordpress-export-css-link");
+        var urlTemplate = document.getElementById("wordpress-url-template");
+        var postsPerPage = document.getElementById("wordpress-posts-per-page");
+        var matchTheme = document.getElementById("wordpress-match-theme");
+        var minimal = document.getElementById("wordpress-minimal");
+
+        function buildExportUrl(path) {
+            var params = new URLSearchParams();
+            if (urlTemplate && urlTemplate.value.trim()) {
+                params.set("url_template", urlTemplate.value.trim());
+            }
+            if (postsPerPage && postsPerPage.value) {
+                params.set("posts_per_page", postsPerPage.value);
+            }
+            if (matchTheme && matchTheme.checked) {
+                params.set("match_theme", "1");
+            }
+            if (minimal && minimal.checked) {
+                params.set("minimal", "1");
+            }
+            var query = params.toString();
+            return query ? path + "?" + query : path;
+        }
+
+        function updateExportLinks() {
+            if (xmlLink) {
+                xmlLink.href = buildExportUrl("/export/wordpress.xml");
+            }
+            if (cssLink) {
+                var showCss = matchTheme && matchTheme.checked;
+                cssLink.hidden = !showCss;
+                if (showCss) {
+                    cssLink.href = buildExportUrl("/export/wordpress-theme.css");
+                }
+            }
+        }
+
+        [urlTemplate, postsPerPage, matchTheme, minimal].forEach(function (element) {
+            if (!element) {
+                return;
+            }
+            element.addEventListener("change", updateExportLinks);
+            element.addEventListener("input", updateExportLinks);
+        });
+
+        updateExportLinks();
+    }
+
     function initFeedPage() {
         var feed = document.getElementById("post-feed");
         var pagination = document.getElementById("pagination");
@@ -737,6 +792,9 @@
     function initPage() {
         if (document.getElementById("infinite-scroll")) {
             initSettingsPage();
+        }
+        if (document.getElementById("wordpress-export-settings")) {
+            initWordPressExportSettings();
         }
         if (document.getElementById("post-feed")) {
             initFeedPage();

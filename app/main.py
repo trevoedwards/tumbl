@@ -34,9 +34,10 @@ from app.index_progress import (
     snapshot,
 )
 from app.open_graph import preview_description, preview_image_url
-from app.parser import PostMeta, get_or_build_index
+from app.parser import PostMeta, get_or_build_index, save_index_cache
 from app.post_metadata import local_post_id_from_url
 from app.post_filters import VALID_POST_TYPES, apply_filters
+from app.archive_detect import detect_archive_format
 from app.security import (
     PUBLIC_INDEX_ERROR,
     apply_security_headers,
@@ -48,6 +49,12 @@ from app.security import (
     resolve_allowed_file,
 )
 from app.tag_index import build_tag_counts
+from app.tag_overrides import (
+    apply_tag_overrides,
+    load_tag_overrides,
+    save_tag_overrides,
+    validate_and_normalize_tags,
+)
 from app.timestamp_parse import month_label
 
 POSTS_PER_PAGE = 20
@@ -103,6 +110,8 @@ def warm_index(archive_path: Path, cache_path: Path) -> None:
             cache_root=cache_path,
             on_progress=progress_callback(),
         )
+        overrides = load_tag_overrides(cache_path)
+        apply_tag_overrides(posts, overrides)
         with _index_lock:
             _posts_index = posts
             _post_ids = {post.id for post in posts}
@@ -161,14 +170,30 @@ def create_app() -> Flask:
     app.config["BACKGROUND_IMAGE_PATH"] = background_image_path
     app.config["BACKGROUND_IMAGE_URL"] = background_image_url
 
+    from app.exporters.wordpress_wxr import (
+        DEFAULT_POSTS_PER_PAGE,
+        DEFAULT_URL_TEMPLATE,
+        validate_url_template,
+    )
+
     wordpress_export_enabled = _env_flag("WORDPRESS_EXPORT_ENABLED")
     wordpress_export_author = os.environ.get("WORDPRESS_EXPORT_AUTHOR", "admin").strip() or "admin"
     wordpress_export_site_url = os.environ.get(
-        "WORDPRESS_EXPORT_SITE_URL", "https://example.wordpress.com"
+        "WORDPRESS_EXPORT_SITE_URL", "https://example.com"
     ).strip()
     wordpress_export_media_base_url = os.environ.get(
         "WORDPRESS_EXPORT_MEDIA_BASE_URL", ""
     ).strip()
+    wordpress_export_url_template = validate_url_template(
+        os.environ.get("WORDPRESS_EXPORT_URL_TEMPLATE", DEFAULT_URL_TEMPLATE)
+    )
+    try:
+        wordpress_export_posts_per_page = int(
+            os.environ.get("WORDPRESS_EXPORT_POSTS_PER_PAGE", str(DEFAULT_POSTS_PER_PAGE))
+        )
+    except ValueError:
+        wordpress_export_posts_per_page = DEFAULT_POSTS_PER_PAGE
+    wordpress_export_posts_per_page = max(1, min(wordpress_export_posts_per_page, 100))
     if wordpress_export_media_base_url and not is_safe_http_url(
         wordpress_export_media_base_url
     ):
@@ -182,6 +207,11 @@ def create_app() -> Flask:
     app.config["WORDPRESS_EXPORT_AUTHOR"] = wordpress_export_author
     app.config["WORDPRESS_EXPORT_SITE_URL"] = wordpress_export_site_url
     app.config["WORDPRESS_EXPORT_MEDIA_BASE_URL"] = wordpress_export_media_base_url
+    app.config["WORDPRESS_EXPORT_URL_TEMPLATE"] = wordpress_export_url_template
+    app.config["WORDPRESS_EXPORT_POSTS_PER_PAGE"] = wordpress_export_posts_per_page
+    app.config["WORDPRESS_EXPORT_MATCH_THEME"] = _env_flag("WORDPRESS_EXPORT_MATCH_THEME")
+    app.config["WORDPRESS_EXPORT_MINIMAL"] = _env_flag("WORDPRESS_EXPORT_MINIMAL")
+    app.config["TAG_EDITING_ENABLED"] = _env_flag("TAG_EDITING_ENABLED", default=True)
 
     @app.after_request
     def _add_security_headers(response):
@@ -204,6 +234,14 @@ def create_app() -> Flask:
             "post_types": ["audio", "photo", "text", "video"],
             "nav_active_type": active_type,
             "wordpress_export_enabled": app.config.get("WORDPRESS_EXPORT_ENABLED", False),
+            "wordpress_export_site_url": app.config.get("WORDPRESS_EXPORT_SITE_URL", ""),
+            "wordpress_export_url_template": app.config.get(
+                "WORDPRESS_EXPORT_URL_TEMPLATE", DEFAULT_URL_TEMPLATE
+            ),
+            "wordpress_export_posts_per_page": app.config.get(
+                "WORDPRESS_EXPORT_POSTS_PER_PAGE", DEFAULT_POSTS_PER_PAGE
+            ),
+            "tag_editing_enabled": app.config.get("TAG_EDITING_ENABLED", True),
         }
 
     def _get_index() -> list[PostMeta]:
@@ -518,13 +556,54 @@ def create_app() -> Flask:
 
     if wordpress_export_enabled:
 
+        def _wordpress_export_options():
+            from app.exporters.wordpress_theme import fetch_theme_styles
+            from app.exporters.wordpress_wxr import ExportOptions
+
+            match_theme = app.config.get("WORDPRESS_EXPORT_MATCH_THEME", False)
+            if request.args.get("match_theme") == "1":
+                match_theme = True
+            elif request.args.get("match_theme") == "0":
+                match_theme = False
+
+            minimal = app.config.get("WORDPRESS_EXPORT_MINIMAL", False)
+            if request.args.get("minimal") == "1":
+                minimal = True
+            elif request.args.get("minimal") == "0":
+                minimal = False
+
+            url_template = validate_url_template(
+                request.args.get("url_template", "").strip()
+                or app.config.get("WORDPRESS_EXPORT_URL_TEMPLATE", DEFAULT_URL_TEMPLATE)
+            )
+
+            posts_per_page = request.args.get("posts_per_page", type=int)
+            if posts_per_page is None:
+                posts_per_page = app.config.get(
+                    "WORDPRESS_EXPORT_POSTS_PER_PAGE", DEFAULT_POSTS_PER_PAGE
+                )
+            posts_per_page = max(1, min(posts_per_page, 100))
+
+            theme_styles = None
+            if match_theme:
+                theme_styles = fetch_theme_styles(app.config["WORDPRESS_EXPORT_SITE_URL"])
+
+            return ExportOptions(
+                minimal=minimal,
+                match_theme=match_theme,
+                url_template=url_template,
+                posts_per_page=posts_per_page,
+                theme_styles=theme_styles,
+            )
+
         @app.route("/export/wordpress.xml")
         def export_wordpress() -> object:
             loading = _loading_or_ready()
             if loading:
                 return loading
-            from app.exporters.wordpress_wxr import generate_wxr
+            from app.exporters.wordpress_wxr import export_filename, generate_wxr
 
+            export_options = _wordpress_export_options()
             media_base = app.config.get("WORDPRESS_EXPORT_MEDIA_BASE_URL") or None
             xml = generate_wxr(
                 _get_index(),
@@ -532,11 +611,35 @@ def create_app() -> Flask:
                 author=app.config["WORDPRESS_EXPORT_AUTHOR"],
                 blog_title=blog_title,
                 media_base_url=media_base,
+                options=export_options,
             )
             response = make_response(xml)
             response.headers["Content-Type"] = "application/rss+xml; charset=utf-8"
             response.headers["Content-Disposition"] = (
-                'attachment; filename="tumblr-wordpress-export.xml"'
+                f'attachment; filename="{export_filename(minimal=export_options.minimal)}"'
+            )
+            return response
+
+        @app.route("/export/wordpress-theme.css")
+        def export_wordpress_theme() -> object:
+            loading = _loading_or_ready()
+            if loading:
+                return loading
+            from app.exporters.wordpress_theme import build_theme_css, fetch_theme_styles
+
+            export_options = _wordpress_export_options()
+            if not export_options.match_theme:
+                abort(404)
+            styles = export_options.theme_styles or fetch_theme_styles(
+                app.config["WORDPRESS_EXPORT_SITE_URL"]
+            )
+            if not styles:
+                abort(404)
+            css = build_theme_css(styles)
+            response = make_response(css)
+            response.headers["Content-Type"] = "text/css; charset=utf-8"
+            response.headers["Content-Disposition"] = (
+                'attachment; filename="wordpress-export-theme.css"'
             )
             return response
 

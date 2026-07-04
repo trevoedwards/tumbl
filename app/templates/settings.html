@@ -108,15 +108,94 @@
         </fieldset>
 
         {% if wordpress_export_enabled %}
-        <fieldset class="settings-group">
+        <fieldset class="settings-group" id="wordpress-export-settings">
             <legend class="settings-group-title">WordPress export</legend>
             <p class="settings-field-desc">
-                Download a WordPress WXR import file generated from this archive.
-                Import it in WordPress under <strong>Tools → Import → WordPress</strong>.
+                Download a WordPress WXR import file for your <strong>existing</strong> WordPress site.
+                See the <a href="https://github.com/trevoedwards/tumbl/blob/main/docs/wordpress-export.md" rel="noopener noreferrer" target="_blank">WordPress export guide</a> for the full import walkthrough.
             </p>
+
+            <div class="settings-field">
+                <span class="settings-field-label">
+                    <strong>Target site</strong>
+                    <span class="settings-field-desc">
+                        Configured with <code>WORDPRESS_EXPORT_SITE_URL</code> (currently
+                        <code>{{ wordpress_export_site_url }}</code>).
+                    </span>
+                </span>
+            </div>
+
+            <div class="settings-field">
+                <label class="settings-field-label" for="wordpress-url-template">
+                    <strong>Post URL template</strong>
+                    <span class="settings-field-desc">
+                        Placeholders: <code>{site_url}</code>, <code>{page}</code>, <code>{id}</code>,
+                        <code>{slug}</code>, <code>{index}</code>.
+                    </span>
+                </label>
+                <div class="settings-field-controls">
+                    <input
+                        type="text"
+                        id="wordpress-url-template"
+                        class="settings-text-input"
+                        value="{{ wordpress_export_url_template }}"
+                        spellcheck="false"
+                        autocomplete="off"
+                    >
+                </div>
+            </div>
+
+            <div class="settings-field">
+                <label class="settings-field-label" for="wordpress-posts-per-page">
+                    <strong>Posts per page</strong>
+                    <span class="settings-field-desc">
+                        Used to compute <code>{page}</code> in the URL template (newest posts are page 1).
+                    </span>
+                </label>
+                <div class="settings-field-controls">
+                    <input
+                        type="number"
+                        id="wordpress-posts-per-page"
+                        class="settings-text-input"
+                        min="1"
+                        max="100"
+                        value="{{ wordpress_export_posts_per_page }}"
+                    >
+                </div>
+            </div>
+
+            <label class="settings-toggle">
+                <input type="checkbox" id="wordpress-match-theme">
+                <span class="settings-toggle-label">
+                    <strong>Match target site colors and fonts</strong>
+                    <span class="settings-toggle-desc">
+                        Fetches typography and colors from your WordPress site and includes a companion
+                        stylesheet download.
+                    </span>
+                </span>
+            </label>
+
+            <label class="settings-toggle">
+                <input type="checkbox" id="wordpress-minimal">
+                <span class="settings-toggle-label">
+                    <strong>Minimal export</strong>
+                    <span class="settings-toggle-desc">
+                        Strip Tumblr/tumbl branding from export metadata for a neutral blog feed.
+                    </span>
+                </span>
+            </label>
+
             <p class="settings-field-controls">
-                <a class="settings-export-link" href="{{ url_for('export_wordpress') }}">
+                <a class="settings-export-link" id="wordpress-export-xml-link" href="{{ url_for('export_wordpress') }}">
                     Download WordPress export (.xml)
+                </a>
+                <a
+                    class="settings-export-link"
+                    id="wordpress-export-css-link"
+                    href="{{ url_for('export_wordpress_theme') }}"
+                    hidden
+                >
+                    Download theme stylesheet (.css)
                 </a>
             </p>
         </fieldset>
