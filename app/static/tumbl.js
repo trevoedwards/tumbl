@@ -289,6 +289,121 @@
         });
     }
 
+    function parseTagInput(value) {
+        return value
+            .split(",")
+            .map(function (item) {
+                return item.trim().replace(/^#+/, "");
+            })
+            .filter(Boolean);
+    }
+
+    function renderPostTags(tagsEl, tags) {
+        tagsEl.innerHTML = "";
+        tags.forEach(function (tag) {
+            var link = document.createElement("a");
+            link.className = "tag";
+            link.href = "/tag/" + encodeURIComponent(tag);
+            link.textContent = "#" + tag;
+            tagsEl.appendChild(link);
+        });
+        tagsEl.hidden = tags.length === 0;
+    }
+
+    function initTagEditor() {
+        var wrap = document.querySelector(".post-tags-editable");
+        if (!wrap) {
+            return;
+        }
+
+        var article = wrap.closest(".post");
+        var postId = article && article.dataset.postId;
+        if (!postId) {
+            return;
+        }
+
+        var tagsEl = wrap.querySelector(".post-tags");
+        var editPanel = wrap.querySelector(".post-tags-edit");
+        var input = wrap.querySelector(".post-tags-input");
+        var statusEl = wrap.querySelector(".post-tags-status");
+        var toggleBtn = wrap.querySelector(".post-tags-edit-toggle");
+        var saveBtn = wrap.querySelector(".post-tags-save");
+        var cancelBtn = wrap.querySelector(".post-tags-cancel");
+        if (!tagsEl || !editPanel || !input || !toggleBtn || !saveBtn || !cancelBtn) {
+            return;
+        }
+
+        var originalTags = parseTagInput(input.value);
+
+        function setStatus(message, isError) {
+            if (!statusEl) {
+                return;
+            }
+            statusEl.textContent = message || "";
+            statusEl.classList.toggle("post-tags-status-error", Boolean(isError));
+        }
+
+        function enterEditMode() {
+            originalTags = parseTagInput(
+                Array.prototype.map.call(tagsEl.querySelectorAll(".tag"), function (link) {
+                    return link.textContent.replace(/^#+/, "");
+                }).join(", ")
+            );
+            input.value = originalTags.join(", ");
+            editPanel.hidden = false;
+            toggleBtn.hidden = true;
+            setStatus("");
+            input.focus();
+        }
+
+        function exitEditMode() {
+            editPanel.hidden = true;
+            toggleBtn.hidden = false;
+            setStatus("");
+        }
+
+        toggleBtn.addEventListener("click", enterEditMode);
+        cancelBtn.addEventListener("click", function () {
+            input.value = originalTags.join(", ");
+            exitEditMode();
+        });
+
+        saveBtn.addEventListener("click", function () {
+            var tags = parseTagInput(input.value);
+            saveBtn.disabled = true;
+            setStatus("Saving…");
+
+            fetch("/api/posts/" + encodeURIComponent(postId) + "/tags", {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ tags: tags }),
+            })
+                .then(function (response) {
+                    return response.json().then(function (data) {
+                        return { ok: response.ok, data: data };
+                    });
+                })
+                .then(function (result) {
+                    if (!result.ok) {
+                        throw new Error(result.data.error || "Could not save tags.");
+                    }
+                    originalTags = result.data.tags || [];
+                    renderPostTags(tagsEl, originalTags);
+                    input.value = originalTags.join(", ");
+                    setStatus("Saved.");
+                    window.setTimeout(function () {
+                        exitEditMode();
+                    }, 800);
+                })
+                .catch(function (error) {
+                    setStatus(error.message || "Could not save tags.", true);
+                })
+                .finally(function () {
+                    saveBtn.disabled = false;
+                });
+        });
+    }
+
     function initSettingsPage() {
         var infiniteScroll = document.getElementById("infinite-scroll");
         var darkMode = document.getElementById("dark-mode");
@@ -802,6 +917,9 @@
         if (document.getElementById("loading-status")) {
             initLoadingPage();
         }
+        if (document.querySelector(".post-tags-editable")) {
+            initTagEditor();
+        }
     }
 
     window.tumbl = {
@@ -815,6 +933,7 @@
         initLoadingPage: initLoadingPage,
         initKeyboardShortcuts: initKeyboardShortcuts,
         initPhotoLightbox: initPhotoLightbox,
+        initTagEditor: initTagEditor,
     };
 
     initGlobalAppearance();

@@ -485,6 +485,39 @@ def create_app() -> Flask:
             }
         )
 
+    @app.route("/api/posts/<post_id>/tags", methods=["PATCH"])
+    def api_update_post_tags(post_id: str):
+        if not app.config.get("TAG_EDITING_ENABLED", True):
+            return jsonify({"error": "Tag editing is disabled"}), 403
+        loading = _loading_or_ready()
+        if loading:
+            return jsonify({"error": "Archive is still loading"}), 503
+        if not is_valid_post_id(post_id):
+            return jsonify({"error": "Invalid post id"}), 400
+        payload = request.get_json(silent=True)
+        if not isinstance(payload, dict) or "tags" not in payload:
+            return jsonify({"error": "Request body must include tags"}), 400
+        tags, error = validate_and_normalize_tags(payload["tags"])
+        if error:
+            return jsonify({"error": error}), 400
+        assert tags is not None
+
+        with _index_lock:
+            if _posts_index is None:
+                return jsonify({"error": "Archive is still loading"}), 503
+            post = next((item for item in _posts_index if item.id == post_id), None)
+            if not post:
+                return jsonify({"error": "Post not found"}), 404
+            post.tags = tags
+            cache_dir = Path(app.config["CACHE_DIR"])
+            overrides = load_tag_overrides(cache_dir)
+            overrides[post_id] = tags
+            save_tag_overrides(cache_dir, overrides)
+            fmt = detect_archive_format(archive_path)
+            save_index_cache(cache_dir, fmt, _posts_index, archive_path)
+
+        return jsonify({"id": post_id, "tags": tags})
+
     @app.route("/post/<post_id>")
     def single_post(post_id: str) -> str:
         loading = _loading_or_ready()
@@ -519,6 +552,7 @@ def create_app() -> Flask:
             og_description=og_description,
             prev_post_id=prev_post_id,
             next_post_id=next_post_id,
+            editable_tags=app.config.get("TAG_EDITING_ENABLED", True),
         )
 
     @app.route("/random")

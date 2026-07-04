@@ -69,9 +69,9 @@ def _render_regular_post(post_el: ET.Element) -> str:
 def _render_quote_post(post_el: ET.Element) -> str:
     quote = _inner_html(post_el.find("quote-text"))
     source = _inner_html(post_el.find("quote-source"))
-    parts = [f"<blockquote>{quote}</blockquote>"]
+    parts = [f'<blockquote class="quote-text">{quote}</blockquote>']
     if source:
-        parts.append(f'<div class="caption">— {source}</div>')
+        parts.append(f'<cite class="quote-source">— {source}</cite>')
     return "\n".join(parts)
 
 
@@ -262,6 +262,7 @@ def parse_posts_xml(archive_root: Path, *, max_bytes: int = 512 * 1024 * 1024) -
                 tumblr_url=tumblr_url,
                 reblog_parent_url=reblog_parent_url,
                 reblog_parent_name=reblog_parent_name,
+                is_quote=xml_type == "quote",
             )
         )
 

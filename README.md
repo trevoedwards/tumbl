@@ -20,6 +20,8 @@ No account required, no data sent anywhere.
 - Paginated feed, full-text search, tag cloud, and date archive
 - Post type filters (photo, audio, video, text), photo lightbox, and **Random** post (`/random`)
 - Permalink pages with Open Graph previews (`og:image`, `og:site_name`) for sharing
+- Edit post tags on permalink pages (saved to cache overrides; original backup unchanged)
+- Improved quote post styling for modern XML exports
 - Keyboard shortcuts: **`/`** search, **`j`/`k`** navigate posts, **`?`** show hints
 - **View on Tumblr** links and reblog context when export metadata includes them
 - Legacy, modern, and tumblr-utils export formats
@@ -58,6 +60,7 @@ First launch indexes posts in the background (often 20–30 seconds for a few th
 | `BLOG_TITLE` | `MyBlog` | Default blog title (overridable in Settings) |
 | `INDEX_WORKERS` | `4` | Parallel workers when building the index |
 | `BACKGROUND_IMAGE` | _(empty)_ | Optional default background: HTTPS URL or file path under the archive/app root |
+| `TAG_EDITING_ENABLED` | `true` | Allow editing tags on permalink pages (saved to `CACHE_DIR`) |
 
 ### Optional: WordPress export
 

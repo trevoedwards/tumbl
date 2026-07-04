@@ -286,9 +286,42 @@ a:hover {
 /* Reblogs / quotes */
 
 blockquote {
-    margin: 10px 0 10px 4px;
-    padding: 0 0 0 12px;
+    margin: 12px 0;
+    padding: 0 0 0 14px;
     border-left: 3px solid var(--border-quote);
+    color: var(--blockquote-text);
+}
+
+.post-quote .post-content blockquote.quote-text,
+.post-quote .post-content blockquote {
+    margin: 0 0 12px;
+    padding: 0 0 0 16px;
+    border-left-width: 4px;
+    font-size: 22px;
+    line-height: 1.45;
+    font-style: italic;
+    color: var(--text-heading);
+}
+
+.post-quote .quote-source {
+    display: block;
+    margin: 0;
+    padding: 0;
+    font-size: 14px;
+    font-style: normal;
+    font-weight: 600;
+    text-align: right;
+    color: var(--caption);
+    border: 0;
+}
+
+.post-content .caption blockquote {
+    margin: 8px 0;
+    padding: 0 0 0 10px;
+    border-left-width: 2px;
+    font-size: inherit;
+    line-height: inherit;
+    font-style: normal;
     color: var(--blockquote-text);
 }
 
@@ -461,6 +494,79 @@ blockquote {
 .post-tags .tag:hover {
     background: var(--tag-bg-hover);
     text-decoration: none;
+}
+
+.post-tags-wrap {
+    width: 100%;
+}
+
+.post-tags-editable .post-tags,
+.post-tags-editable .post-tags-edit-toggle {
+    max-height: none;
+    overflow: visible;
+    opacity: 1;
+    margin-bottom: 8px;
+}
+
+.post-tags-edit-toggle,
+.post-tags-save,
+.post-tags-cancel {
+    margin: 0;
+    padding: 2px 8px;
+    border: 1px solid var(--border-light);
+    border-radius: 3px;
+    background: var(--bg-page);
+    color: var(--text-muted);
+    font: inherit;
+    font-size: 11px;
+    cursor: pointer;
+}
+
+.post-tags-edit-toggle:hover,
+.post-tags-save:hover,
+.post-tags-cancel:hover {
+    color: var(--text-heading);
+    border-color: var(--border-quote);
+}
+
+.post-tags-edit {
+    margin-bottom: 8px;
+}
+
+.post-tags-edit-label {
+    display: block;
+    margin-bottom: 4px;
+    font-size: 11px;
+    color: var(--text-muted);
+}
+
+.post-tags-input {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+    margin-bottom: 6px;
+    padding: 6px 8px;
+    border: 1px solid var(--border-light);
+    border-radius: 3px;
+    background: var(--bg-page);
+    color: var(--text-body);
+    font: inherit;
+    font-size: 13px;
+}
+
+.post-tags-actions {
+    display: flex;
+    gap: 6px;
+}
+
+.post-tags-status {
+    margin: 6px 0 0;
+    font-size: 11px;
+    color: var(--text-muted);
+}
+
+.post-tags-status-error {
+    color: #c0392b;
 }
 
 .post-permalink {

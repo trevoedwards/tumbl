@@ -28,6 +28,11 @@ SAMPLE_POSTS_XML = textwrap.dedent(
           <question><![CDATA[<p>Who are you?</p>]]></question>
           <answer><![CDATA[<p>Just a test.</p>]]></answer>
         </post>
+        <post id="400" type="quote" date="April 4th, 2020 9:00am">
+          <tag>quotes</tag>
+          <quote-text><![CDATA[<p>Stay curious.</p>]]></quote-text>
+          <quote-source><![CDATA[Ada Lovelace]]></quote-source>
+        </post>
       </posts>
     </tumblr>
     """
@@ -52,14 +57,20 @@ class ModernXmlParserTests(unittest.TestCase):
 
     def test_parse_posts_xml(self) -> None:
         posts = build_index(self.archive_root)
-        self.assertEqual(len(posts), 3)
-        self.assertEqual(posts[0].id, "300")
-        self.assertEqual(posts[1].id, "200")
-        self.assertEqual(posts[2].id, "100")
-        self.assertIn("Hello world", posts[2].body_html)
-        self.assertEqual(posts[2].post_type, "text")
-        self.assertEqual(posts[1].post_type, "photo")
-        self.assertFalse(posts[0].is_submission)
+        self.assertEqual(len(posts), 4)
+        self.assertEqual(posts[0].id, "400")
+        self.assertEqual(posts[1].id, "300")
+        self.assertEqual(posts[2].id, "200")
+        self.assertEqual(posts[3].id, "100")
+        self.assertIn("Hello world", posts[3].body_html)
+        self.assertEqual(posts[3].post_type, "text")
+        self.assertEqual(posts[2].post_type, "photo")
+        self.assertFalse(posts[1].is_submission)
+        quote_post = posts[0]
+        self.assertTrue(quote_post.is_quote)
+        self.assertIn('class="quote-text"', quote_post.body_html)
+        self.assertIn('<cite class="quote-source">— Ada Lovelace</cite>', quote_post.body_html)
+        self.assertEqual(quote_post.tags, ["quotes"])
 
     def test_unextracted_posts_zip_is_auto_extracted(self) -> None:
         import io

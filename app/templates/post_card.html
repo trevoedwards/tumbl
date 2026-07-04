@@ -1,4 +1,4 @@
-<article class="post post-{{ post.post_type }}{% if post.is_submission %} post-submission{% endif %}" id="post-{{ post.id }}">
+<article class="post post-{{ post.post_type }}{% if post.is_quote %} post-quote{% endif %}{% if post.is_submission %} post-submission{% endif %}" id="post-{{ post.id }}" data-post-id="{{ post.id }}">
     {% if post.reblog_parent_url or post.reblog_parent_name %}
     <div class="post-reblog-context">
         {% if post.reblog_parent_url %}
@@ -19,13 +19,33 @@
         <time class="post-timestamp">{{ post.timestamp }}</time>
         {% endif %}
         <div class="post-footer-actions">
-            {% if post.tags %}
-            <div class="post-tags" aria-label="Tags">
-                {% for tag in post.tags %}
-                <a class="tag" href="{{ tag | tag_url }}">#{{ tag }}</a>
-                {% endfor %}
+            <div class="post-tags-wrap{% if editable_tags|default(false) %} post-tags-editable{% endif %}">
+                <div class="post-tags" aria-label="Tags"{% if not post.tags %} hidden{% endif %}>
+                    {% for tag in post.tags %}
+                    <a class="tag" href="{{ tag | tag_url }}">#{{ tag }}</a>
+                    {% endfor %}
+                </div>
+                {% if editable_tags|default(false) %}
+                <div class="post-tags-edit" hidden>
+                    <label class="post-tags-edit-label" for="post-tags-input-{{ post.id }}">Tags</label>
+                    <input
+                        type="text"
+                        class="post-tags-input"
+                        id="post-tags-input-{{ post.id }}"
+                        value="{{ post.tags | join(', ') }}"
+                        placeholder="tag one, tag two"
+                        autocomplete="off"
+                        spellcheck="false"
+                    >
+                    <div class="post-tags-actions">
+                        <button type="button" class="post-tags-save">Save</button>
+                        <button type="button" class="post-tags-cancel">Cancel</button>
+                    </div>
+                    <p class="post-tags-status" aria-live="polite"></p>
+                </div>
+                <button type="button" class="post-tags-edit-toggle">Edit tags</button>
+                {% endif %}
             </div>
-            {% endif %}
             <div class="post-footer-links">
                 <a class="post-permalink" href="{{ url_for('single_post', post_id=post.id, _external=True) }}">Permalink</a>
                 {% if post.tumblr_url %}

@@ -29,6 +29,45 @@ SAMPLE_UTILS_POST = textwrap.dedent(
     """
 )
 
+SAMPLE_UTILS_QUOTE_POST = textwrap.dedent(
+    """\
+    <!DOCTYPE html>
+    <html>
+    <body>
+    <article class="quote">
+        <header>
+            <p><time datetime="2020-04-04">April 4th, 2020 9:00am</time></p>
+        </header>
+        <blockquote><p>Stay curious.</p></blockquote>
+        <p>Ada Lovelace</p>
+        <footer><a href="/tagged/quotes">#quotes</a></footer>
+    </article>
+    <footer>
+        <time>April 4th, 2020 9:00am</time>
+        <a href="/tagged/quotes">#quotes</a>
+    </footer>
+    </body>
+    </html>
+    """
+)
+
+SAMPLE_UTILS_DATA_TYPE_QUOTE = textwrap.dedent(
+    """\
+    <!DOCTYPE html>
+    <html>
+    <body>
+    <article data-type="quote">
+        <blockquote><p>Question everything.</p></blockquote>
+        <p>Carl Sagan</p>
+    </article>
+    <footer>
+        <time>June 6th, 2020 8:00am</time>
+    </footer>
+    </body>
+    </html>
+    """
+)
+
 
 class TumblrUtilsParserTests(unittest.TestCase):
     def setUp(self) -> None:
@@ -104,6 +143,27 @@ class TumblrUtilsParserTests(unittest.TestCase):
         post = parse_post_file(self.archive_root / "posts" / "888.html", self.archive_root)
         assert post is not None
         self.assertEqual(post.tags, ["Nature"])
+
+    def test_article_class_quote_detected_and_normalized(self) -> None:
+        (self.archive_root / "posts" / "401.html").write_text(
+            SAMPLE_UTILS_QUOTE_POST, encoding="utf-8"
+        )
+        post = parse_post_file(self.archive_root / "posts" / "401.html", self.archive_root)
+        assert post is not None
+        self.assertTrue(post.is_quote)
+        self.assertNotIn("<header", post.body_html)
+        self.assertIn('<blockquote class="quote-text">', post.body_html)
+        self.assertIn('<cite class="quote-source">— Ada Lovelace</cite>', post.body_html)
+        self.assertEqual(post.tags, ["quotes"])
+
+    def test_data_type_quote_detected_and_normalized(self) -> None:
+        (self.archive_root / "posts" / "402.html").write_text(
+            SAMPLE_UTILS_DATA_TYPE_QUOTE, encoding="utf-8"
+        )
+        post = parse_post_file(self.archive_root / "posts" / "402.html", self.archive_root)
+        assert post is not None
+        self.assertTrue(post.is_quote)
+        self.assertIn('<cite class="quote-source">— Carl Sagan</cite>', post.body_html)
 
 
 if __name__ == "__main__":
