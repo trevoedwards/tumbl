@@ -14,7 +14,6 @@ ALLOWED_TAGS = frozenset(
         "b",
         "blockquote",
         "br",
-        "cite",
         "code",
         "div",
         "em",

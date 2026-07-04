@@ -20,7 +20,6 @@ class PostMeta:
     tumblr_url: str | None = None
     reblog_parent_url: str | None = None
     reblog_parent_name: str | None = None
-    is_quote: bool = False
 
     def to_dict(self) -> dict:
         return asdict(self)
@@ -37,7 +36,6 @@ class PostMeta:
             tumblr_url=data.get("tumblr_url"),
             reblog_parent_url=data.get("reblog_parent_url"),
             reblog_parent_name=data.get("reblog_parent_name"),
-            is_quote=data.get("is_quote", False),
         )
 
 

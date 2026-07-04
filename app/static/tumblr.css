@@ -286,42 +286,9 @@ a:hover {
 /* Reblogs / quotes */
 
 blockquote {
-    margin: 12px 0;
-    padding: 0 0 0 14px;
+    margin: 10px 0 10px 4px;
+    padding: 0 0 0 12px;
     border-left: 3px solid var(--border-quote);
-    color: var(--blockquote-text);
-}
-
-.post-quote .post-content blockquote.quote-text,
-.post-quote .post-content blockquote {
-    margin: 0 0 12px;
-    padding: 0 0 0 16px;
-    border-left-width: 4px;
-    font-size: 22px;
-    line-height: 1.45;
-    font-style: italic;
-    color: var(--text-heading);
-}
-
-.post-quote .quote-source {
-    display: block;
-    margin: 0;
-    padding: 0;
-    font-size: 14px;
-    font-style: normal;
-    font-weight: 600;
-    text-align: right;
-    color: var(--caption);
-    border: 0;
-}
-
-.post-content .caption blockquote {
-    margin: 8px 0;
-    padding: 0 0 0 10px;
-    border-left-width: 2px;
-    font-size: inherit;
-    line-height: inherit;
-    font-style: normal;
     color: var(--blockquote-text);
 }
 

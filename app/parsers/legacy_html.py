@@ -14,7 +14,6 @@ from bs4 import BeautifulSoup
 
 from app.media_resolve import build_media_index, resolve_post_media_refs
 from app.parsers.base import PostMeta, PostType, sort_posts
-from app.parsers.quote_detect import infer_is_quote, normalize_quote_html
 from app.post_metadata import merge_metadata
 
 logger = logging.getLogger(__name__)
@@ -123,16 +122,6 @@ def parse_post_file(
 
     tumblr_url, reblog_parent_url, reblog_parent_name = merge_metadata(body_html=body_html)
 
-    is_quote = infer_is_quote(
-        soup,
-        body_html=body_html,
-        is_submission=is_submission,
-        reblog_parent_url=reblog_parent_url,
-        tags=tags,
-    )
-    if is_quote:
-        body_html = normalize_quote_html(body_html)
-
     return PostMeta(
         id=post_id,
         body_html=body_html,
@@ -143,7 +132,6 @@ def parse_post_file(
         tumblr_url=tumblr_url,
         reblog_parent_url=reblog_parent_url,
         reblog_parent_name=reblog_parent_name,
-        is_quote=is_quote,
     )
 
 

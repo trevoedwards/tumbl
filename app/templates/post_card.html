@@ -1,4 +1,4 @@
-<article class="post post-{{ post.post_type }}{% if post.is_quote %} post-quote{% endif %}{% if post.is_submission %} post-submission{% endif %}" id="post-{{ post.id }}" data-post-id="{{ post.id }}">
+<article class="post post-{{ post.post_type }}{% if post.is_submission %} post-submission{% endif %}" id="post-{{ post.id }}" data-post-id="{{ post.id }}">
     {% if post.reblog_parent_url or post.reblog_parent_name %}
     <div class="post-reblog-context">
         {% if post.reblog_parent_url %}

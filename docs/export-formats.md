@@ -32,8 +32,6 @@ docker compose restart tumbl
 
 Compare `media/` file counts before and after. If a post still has no `{postId}.*` file after a fresh extract, the export did not include that media.
 
-**Quote posts:** Legacy exports do not record post type in metadata. tumbl detects native quote posts heuristically (top-level `<blockquote>` or plain text with an attribution `.caption`) and normalizes them to the same quote markup used by modern XML exports. Reblogs, photos, and submissions are excluded from quote detection.
-
 ## Modern official export (Format B)
 
 Tumblr's current export from [**Settings → Export**](https://help.tumblr.com/export-your-blog/). After downloading the ZIP, extract it fully—including nested `posts.zip`:
@@ -49,8 +47,6 @@ export-folder/
 ```
 
 tumbl reads `posts.xml` as the source of truth and serves images from the local `media/` folder, falling back to Tumblr CDN URLs when a file is missing.
-
-**Quote posts:** When `posts.xml` contains `<post type="quote">`, tumbl uses the structured `quote-text` and `quote-source` fields directly. This is the authoritative quote source when both XML and HTML are present in the export layout.
 
 **`posts.zip`:** tumbl auto-extracts this on startup when needed. You can also extract it manually before launch.
 
@@ -71,8 +67,6 @@ export-folder/
 ```
 
 Each post is read from `posts/{id}.html`. Local media is resolved from the `media/` folder.
-
-**Quote posts:** tumblr-utils exports mark quote posts with `<article class="quote">` (or `data-type="quote"`). tumbl reads that metadata and normalizes the body for quote styling. Legacy-style blockquote markup in other formats is also detected when article metadata is absent.
 
 ## Out of scope
 

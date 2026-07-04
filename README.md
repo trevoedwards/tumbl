@@ -21,7 +21,6 @@ No account required, no data sent anywhere.
 - Post type filters (photo, audio, video, text), photo lightbox, and **Random** post (`/random`)
 - Permalink pages with Open Graph previews (`og:image`, `og:site_name`) for sharing
 - Edit post tags on permalink pages (saved to cache overrides; original backup unchanged)
-- Improved quote post styling for modern XML exports
 - Keyboard shortcuts: **`/`** search, **`j`/`k`** navigate posts, **`?`** show hints
 - **View on Tumblr** links and reblog context when export metadata includes them
 - Legacy, modern, and tumblr-utils export formats
