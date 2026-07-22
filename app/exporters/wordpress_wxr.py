@@ -40,6 +40,8 @@ FULL_TIMESTAMP_RE = re.compile(
 )
 SLUG_SAFE_RE = re.compile(r"[^a-z0-9\-]+")
 ATTACHMENT_ID_BASE = 900_000_000
+# XML 1.0 disallows most C0 controls; strip them so importers can parse the file.
+_INVALID_XML_CHARS_RE = re.compile(r"[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]")
 
 
 @dataclass
@@ -148,16 +150,21 @@ def _register_namespaces() -> None:
     ET.register_namespace("wfw", WXR_NS["wfw"])
 
 
+def _sanitize_xml_text(text: str) -> str:
+    """Remove characters that make the document invalid XML 1.0."""
+    return _INVALID_XML_CHARS_RE.sub("", text)
+
+
 def _wp_el(parent: ET.Element, tag: str, text: str = "") -> ET.Element:
     element = ET.SubElement(parent, f"{{{WXR_NS['wp']}}}{tag}")
     if text:
-        element.text = text
+        element.text = _sanitize_xml_text(text)
     return element
 
 
 def _cdata_element(parent: ET.Element, tag: str, namespace: str, text: str) -> ET.Element:
     element = ET.SubElement(parent, f"{{{namespace}}}{tag}")
-    element.text = text
+    element.text = _sanitize_xml_text(text)
     return element
 
 
@@ -251,7 +258,7 @@ def _add_tag_categories(item: ET.Element, tags: list[str]) -> None:
         category = ET.SubElement(item, "category")
         category.set("domain", "post_tag")
         category.set("nicename", slugify(tag))
-        category.text = tag
+        category.text = _sanitize_xml_text(tag)
 
 
 def _guid_is_permalink(link: str) -> str:
@@ -282,7 +289,7 @@ def _add_post_item(
     )
 
     item = ET.SubElement(channel, "item")
-    ET.SubElement(item, "title").text = title
+    ET.SubElement(item, "title").text = _sanitize_xml_text(title)
     ET.SubElement(item, "link").text = link
     _cdata_element(item, "creator", WXR_NS["dc"], author)
     ET.SubElement(item, "pubDate").text = post_date
@@ -401,21 +408,14 @@ def generate_wxr(
     else:
         channel_description = f"Tumblr archive export for {blog_title}"
 
-    rss = ET.Element(
-        "rss",
-        {
-            "version": "2.0",
-            f"xmlns:content": WXR_NS["content"],
-            f"xmlns:dc": WXR_NS["dc"],
-            f"xmlns:excerpt": WXR_NS["excerpt"],
-            f"xmlns:wp": WXR_NS["wp"],
-            f"xmlns:wfw": WXR_NS["wfw"],
-        },
-    )
+    # Rely on register_namespace() for xmlns:* prefixes. Setting those attributes
+    # here as well produces duplicate xmlns declarations (invalid XML), which
+    # makes WordPress report a missing/invalid WXR version on import.
+    rss = ET.Element("rss", {"version": "2.0"})
     channel = ET.SubElement(rss, "channel")
-    ET.SubElement(channel, "title").text = blog_title
+    ET.SubElement(channel, "title").text = _sanitize_xml_text(blog_title)
     ET.SubElement(channel, "link").text = channel_link
-    ET.SubElement(channel, "description").text = channel_description
+    ET.SubElement(channel, "description").text = _sanitize_xml_text(channel_description)
     ET.SubElement(channel, "language").text = "en-US"
     _wp_el(channel, "wxr_version", WXR_VERSION)
     _wp_el(channel, "base_site_url", normalized_site)

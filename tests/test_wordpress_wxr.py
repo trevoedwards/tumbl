@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 import unittest
+import xml.etree.ElementTree as ET
 from unittest.mock import patch
 
 from app.exporters.wordpress_theme import ThemeStyles, build_theme_css
@@ -114,6 +115,21 @@ class WordPressWxrTests(unittest.TestCase):
             '<img src="/media/a.jpg">'
         )
         self.assertEqual(extract_media_filenames(html), ["a.jpg", "b.png"])
+
+    def test_generate_wxr_is_well_formed_xml(self) -> None:
+        xml = generate_wxr(
+            [_sample_post(body_html='<p>Hi\x00 there</p><img src="/media/12345.jpg">')],
+            site_url="https://usersite.com",
+            author="admin",
+            blog_title="My Blog",
+            media_base_url="https://cdn.example.com/archive-media",
+        )
+        self.assertEqual(xml.count('xmlns:wp="'), 1)
+        self.assertEqual(xml.count('xmlns:content="'), 1)
+        self.assertIn("<wp:wxr_version>1.2</wp:wxr_version>", xml)
+        self.assertNotIn("\x00", xml)
+        root = ET.fromstring(xml)
+        self.assertEqual(root.tag, "rss")
 
     def test_generate_wxr_contains_post_fields(self) -> None:
         xml = generate_wxr(

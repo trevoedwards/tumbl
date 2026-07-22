@@ -4,6 +4,11 @@
 .staging/
 .cache/
 
+# --- Local Docker Compose (edit freely; see docker-compose.dev.yml.example) ---
+docker-compose.dev.yml
+docker-compose.override.yml
+docker-compose.local.yml
+
 # --- Python ---
 __pycache__/
 *.py[cod]

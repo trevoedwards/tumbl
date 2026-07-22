@@ -78,4 +78,4 @@ All three supported input formats can be converted to a WordPress WXR import fil
 
 **Structure:** each Tumblr post becomes an individual WordPress **Post** (not one Page). Media is imported via a public HTTPS base URL for your archive `media/` folder.
 
-See **[WordPress export](wordpress-export.md)** for what you get in WordPress, the full import walkthrough, and media staging.
+See **[WordPress export](wordpress-export.md)** for what you get in WordPress, the full import walkthrough, and media staging — or the [quick start](wordpress-export-quickstart.md) for a condensed version.

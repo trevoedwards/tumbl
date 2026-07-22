@@ -4,6 +4,8 @@ tumbl can generate a [WordPress WXR](https://developer.wordpress.org/advanced-ad
 
 The export feature is **disabled by default** so local-only users pay no overhead.
 
+In a hurry? See the [quick start](wordpress-export-quickstart.md) for a condensed step-by-step version of this guide.
+
 ---
 
 ## What you get in WordPress (structure)
@@ -137,8 +139,8 @@ Remember: this does **not** merge posts onto one WordPress Page. Each Tumblr pos
 #### Customize the template
 
 ```bash
-# Journal instead of /blog/
-WORDPRESS_EXPORT_URL_TEMPLATE={site_url}/journal/?page={page}#post-{id}
+# Journal instead of /blog/ — quote values that contain # (dotenv comment rules)
+WORDPRESS_EXPORT_URL_TEMPLATE="{site_url}/journal/?page={page}#post-{id}"
 
 # Pretty permalinks (individual post URLs in WXR metadata)
 WORDPRESS_EXPORT_URL_TEMPLATE={site_url}/{slug}/
@@ -384,6 +386,7 @@ WXR export works from any format tumbl can index:
 | Expected one Page, got many Posts | That is correct — see [What you get in WordPress](#what-you-get-in-wordpress-structure) |
 | Wrong post URLs after import | WordPress generates permalinks from **Settings → Permalinks**; the URL template only affects WXR metadata |
 | Theme CSS download 404 | Enable **Match target site colors and fonts** or add `?match_theme=1`; site must be reachable from tumbl |
+| Import says missing/invalid WXR version | Re-download after updating tumbl — older exports could emit duplicate `xmlns:*` attributes (invalid XML). Also raise PHP `upload_max_filesize` / `post_max_size` above the `.xml` size (Hostinger is often 8–16M; media-heavy exports can be larger) |
 | Images broken after import | Set `WORDPRESS_EXPORT_MEDIA_BASE_URL` to a public URL; re-export and re-import attachments, or fix links manually |
 | Import times out | Large archives may need increased PHP `max_execution_time` on self-hosted WordPress |
 | Duplicate posts on re-import | WordPress importer may create duplicates; use a fresh site or delete previously imported posts first |
@@ -392,5 +395,6 @@ WXR export works from any format tumbl can index:
 
 ## See also
 
+- [Quick start](wordpress-export-quickstart.md) — condensed step-by-step version of this guide
 - [Export formats](export-formats.md) — Tumblr backup layouts tumbl accepts
 - [README](../README.md) — Environment variable summary

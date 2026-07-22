@@ -1,0 +1,45 @@
+# Local-only Docker Compose for development / testing.
+# Copy to docker-compose.dev.yml (gitignored) and edit freely.
+#
+# Usage:
+#   cp docker-compose.dev.yml.example docker-compose.dev.yml
+#   docker compose -f docker-compose.dev.yml up --build
+#
+# ARCHIVE_PATH / CACHE_DIR are set to container paths here so a flask-oriented
+# .env (ARCHIVE_PATH=.tumblrbackup) will not break the container.
+
+services:
+  tumbl:
+    build: .
+    container_name: tumbl-dev
+    ports:
+      - "8862:8862"
+    volumes:
+      # Host archive → container (change the left side if you use a different folder)
+      - ./.tumblrbackup:/archive:ro
+      # Bind-mount cache so you can wipe .cache/ locally without docker volume prune
+      - ./.cache:/app/cache
+      # Uncomment to live-edit app code without rebuilding the image:
+      # - ./app:/app/app
+    environment:
+      - ARCHIVE_PATH=/archive
+      - CACHE_DIR=/app/cache
+      - BLOG_TITLE=${BLOG_TITLE:-MyBlog}
+      - INDEX_WORKERS=${INDEX_WORKERS:-4}
+      - BACKGROUND_IMAGE=${BACKGROUND_IMAGE:-}
+      - TAG_EDITING_ENABLED=${TAG_EDITING_ENABLED:-true}
+      # WordPress WXR export — set values in .env or uncomment / edit here
+      - WORDPRESS_EXPORT_ENABLED=${WORDPRESS_EXPORT_ENABLED:-false}
+      - WORDPRESS_EXPORT_AUTHOR=${WORDPRESS_EXPORT_AUTHOR:-admin}
+      - WORDPRESS_EXPORT_SITE_URL=${WORDPRESS_EXPORT_SITE_URL:-https://example.com}
+      - "WORDPRESS_EXPORT_URL_TEMPLATE=${WORDPRESS_EXPORT_URL_TEMPLATE:-{site_url}/blog/?page={page}#post-{id}}"
+      - WORDPRESS_EXPORT_POSTS_PER_PAGE=${WORDPRESS_EXPORT_POSTS_PER_PAGE:-20}
+      - WORDPRESS_EXPORT_MEDIA_BASE_URL=${WORDPRESS_EXPORT_MEDIA_BASE_URL:-}
+      - WORDPRESS_EXPORT_MATCH_THEME=${WORDPRESS_EXPORT_MATCH_THEME:-false}
+      - WORDPRESS_EXPORT_MINIMAL=${WORDPRESS_EXPORT_MINIMAL:-false}
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8862/healthz')"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 60s
