@@ -76,4 +76,6 @@ The privacy/account JSON download from Tumblr settings is **not** supported—tu
 
 All three supported input formats can be converted to a WordPress WXR import file when optional export is enabled. This is useful if you have an offline backup but no live Tumblr account for WordPress.com's [Tumblr importer](https://wordpress.com/support/import/import-from-tumblr/).
 
-See **[WordPress export](wordpress-export.md)** for configuration, import steps, and media limitations.
+**Structure:** each Tumblr post becomes an individual WordPress **Post** (not one Page). Media is imported via a public HTTPS base URL for your archive `media/` folder.
+
+See **[WordPress export](wordpress-export.md)** for what you get in WordPress, the full import walkthrough, and media staging.

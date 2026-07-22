@@ -112,7 +112,8 @@
             <legend class="settings-group-title">WordPress export</legend>
             <p class="settings-field-desc">
                 Download a WordPress WXR import file for your <strong>existing</strong> WordPress site.
-                See the <a href="https://github.com/trevoedwards/tumbl/blob/main/docs/wordpress-export.md" rel="noopener noreferrer" target="_blank">WordPress export guide</a> for the full import walkthrough.
+                Each Tumblr post becomes its own WordPress <strong>Post</strong> (not one Page).
+                See the <a href="https://github.com/trevoedwards/tumbl/blob/main/docs/wordpress-export.md" rel="noopener noreferrer" target="_blank">WordPress export guide</a> for structure, import steps, and media staging.
             </p>
 
             <div class="settings-field">
@@ -129,6 +130,8 @@
                 <label class="settings-field-label" for="wordpress-url-template">
                     <strong>Post URL template</strong>
                     <span class="settings-field-desc">
+                        WXR link/GUID metadata only — WordPress still creates individual Posts;
+                        final URLs follow your site permalinks.
                         Placeholders: <code>{site_url}</code>, <code>{page}</code>, <code>{id}</code>,
                         <code>{slug}</code>, <code>{index}</code>.
                     </span>

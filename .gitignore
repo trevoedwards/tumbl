@@ -1,5 +1,6 @@
 # --- Project data (local archives, staging, generated cache) ---
 .tumblrbackup/
+.tumblrbackup_nsfw/
 .staging/
 .cache/
 

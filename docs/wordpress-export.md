@@ -6,14 +6,72 @@ The export feature is **disabled by default** so local-only users pay no overhea
 
 ---
 
+## What you get in WordPress (structure)
+
+**Each Tumblr post becomes its own WordPress Post — not one Page.**
+
+Import does **not** dump the archive into a single WordPress Page. WordPress creates many separate blog posts, the same way a normal WordPress blog stores entries under **Posts → All Posts**.
+
+| Tumblr / export | After WordPress import | Where to look in WP admin |
+|-----------------|------------------------|---------------------------|
+| One Tumblr post | One **Post** (`post_type=post`, published) | **Posts → All Posts** |
+| Post HTML body | That post’s content | Open the post in the editor or on the front end |
+| Tags | WordPress **post tags** | Post editor → Tags, or **Posts → Tags** |
+| Archive timestamp | Post date (and usually the post title) | Posts list / post editor |
+| Slug `tumblr-{id}` (or `post-{id}` in minimal mode) | Post slug (`wp:post_name`) | Often part of the permalink |
+| Media file (when media base URL is set) | **Attachment** in the Media Library, parented to that post | **Media → Library** |
+| Whole archive | Many posts (+ optional attachments) | Not a single Page |
+
+**Not created:** WordPress Pages, menus, categories (tags only), comments, drafts, or a single “archive dump” page.
+
+### Hierarchy at a glance
+
+```text
+Tumblr archive
+├── Post A  ──►  WordPress Post A  (+ optional Media attachments)
+├── Post B  ──►  WordPress Post B  (+ optional Media attachments)
+└── Post C  ──►  WordPress Post C  (+ optional Media attachments)
+```
+
+After import you should see roughly one new row in **Posts → All Posts** per Tumblr post in the archive (plus attachment rows in **Media → Library** if you imported file attachments).
+
+### Titles and content
+
+- **Title** is usually the archive timestamp string when present; otherwise `Tumblr post {id}` / `Post {id}` (minimal mode).
+- **Content** is the same sanitized HTML tumbl shows in the archive viewer, wrapped in `<div id="post-{id}" class="tumblr-archive-post">`.
+- **Comments** are closed on imported posts.
+
+### URL template vs real permalinks
+
+The export’s **Post URL template** only fills link/GUID fields inside the WXR file. It does **not** mean WordPress puts every Tumblr post on one paginated page.
+
+The default template looks like a feed with anchors:
+
+```text
+{site_url}/blog/?page={page}#post-{id}
+```
+
+That can be misleading. WordPress still creates **individual Posts**. After import, front-end URLs almost always follow your site’s **Settings → Permalinks** (for example `/tumblr-12345/` or `/2020/01/05/tumblr-12345/`), not necessarily the template string.
+
+Use a pretty-permalink style template if you want WXR metadata to resemble per-post URLs:
+
+```bash
+WORDPRESS_EXPORT_URL_TEMPLATE={site_url}/{slug}/
+```
+
+See [Post URL template](#post-url-template) for placeholders and options.
+
+---
+
 ## Quick start checklist
 
 1. [Enable export](#1-enable-export) in your tumbl environment
 2. [Configure your existing WordPress site URL](#2-configure-your-existing-wordpress-site)
-3. [Download the export](#3-download-the-export) from Settings or `/export/wordpress.xml`
-4. [Import into WordPress](#4-import-into-wordpress)
-5. (Optional) [Apply theme matching CSS](#5-optional-match-colors-and-fonts)
-6. (Optional) [Troubleshoot media](#media-limitations) if images are missing after import
+3. (Recommended) [Stage media](#3-stage-media-on-public-https) on public HTTPS (often your WordPress host’s storage)
+4. [Download the export](#4-download-the-export) from Settings or `/export/wordpress.xml`
+5. [Import into WordPress](#5-import-into-wordpress) (end-to-end)
+6. (Optional) [Apply theme matching CSS](#6-optional-match-colors-and-fonts)
+7. (Optional) [Troubleshoot](#troubleshooting) if images or URLs look wrong
 
 ---
 
@@ -52,19 +110,19 @@ tumbl uses this URL for channel metadata, theme color/font fetching, and as the 
 
 ### Post URL template
 
-By default, each exported post is assigned a link that matches a paginated blog feed:
+By default, each exported post is assigned a **metadata** link that looks like a paginated blog feed:
 
 ```
 {site_url}/blog/?page={page}#post-{id}
 ```
 
-For `WORDPRESS_EXPORT_SITE_URL=https://usersite.com`, the newest post might get:
+For `WORDPRESS_EXPORT_SITE_URL=https://usersite.com`, the newest post’s WXR link might be:
 
 ```
 https://usersite.com/blog/?page=1#post-12345
 ```
 
-The 21st newest post (with 20 posts per page) gets `?page=2`, and so on.
+Remember: this does **not** merge posts onto one WordPress Page. Each Tumblr post is still a separate WordPress Post after import. See [URL template vs real permalinks](#url-template-vs-real-permalinks).
 
 #### Placeholders
 
@@ -78,13 +136,11 @@ The 21st newest post (with 20 posts per page) gets `?page=2`, and so on.
 
 #### Customize the template
 
-If your blog lives at a different path, set `WORDPRESS_EXPORT_URL_TEMPLATE`:
-
 ```bash
 # Journal instead of /blog/
 WORDPRESS_EXPORT_URL_TEMPLATE={site_url}/journal/?page={page}#post-{id}
 
-# Pretty permalinks (individual post URLs)
+# Pretty permalinks (individual post URLs in WXR metadata)
 WORDPRESS_EXPORT_URL_TEMPLATE={site_url}/{slug}/
 ```
 
@@ -92,7 +148,7 @@ You can also change the template per download from **Settings → WordPress expo
 
 #### Posts per page
 
-`WORDPRESS_EXPORT_POSTS_PER_PAGE` controls how `{page}` is calculated. Default is `20` (same as tumbl's feed). Set this to match your WordPress blog's posts-per-page if you use paginated feed URLs.
+`WORDPRESS_EXPORT_POSTS_PER_PAGE` controls how `{page}` is calculated when your template uses `{page}`. Default is `20` (same as tumbl's feed).
 
 ```bash
 WORDPRESS_EXPORT_POSTS_PER_PAGE=10
@@ -100,18 +156,47 @@ WORDPRESS_EXPORT_POSTS_PER_PAGE=10
 
 ### Post anchors
 
-Exported post HTML is wrapped in `<div id="post-{id}" class="tumblr-archive-post">` so `#post-{id}` anchors in the URL template resolve to the correct post content after import.
+Exported post HTML is wrapped in `<div id="post-{id}" class="tumblr-archive-post">` so a `#post-{id}` fragment in a URL template can target that post’s own HTML. That wrapper lives **inside each individual post’s content**; it is not evidence that all posts share one Page.
 
 ---
 
-## 3. Download the export
+## 3. Stage media on public HTTPS
+
+Tumblr archives are media-heavy. WXR does **not** embed image/video/audio files. WordPress imports attachments by downloading each `wp:attachment_url` from a URL it can reach.
+
+### Recommended: use your WordPress host’s storage
+
+If your WordPress plan already includes substantial disk space (for example Hostinger or similar shared hosting), upload the archive `media/` folder to a publicly reachable location on that same host, then point tumbl at it:
+
+```bash
+# Example: media staged under your site
+WORDPRESS_EXPORT_MEDIA_BASE_URL=https://usersite.com/tumblr-media
+```
+
+A multi‑GB archive is often fine relative to plans that offer tens or hundreds of GB. After import, WordPress will have copied attachments into its Media Library; you can delete the temporary staging folder if you no longer need it.
+
+### Other staging options
+
+- Object storage / CDN (S3, Cloudflare R2, etc.)
+- Any static HTTPS file host
+- A temporary tunnel (for example ngrok) only while importing — localhost/LAN URLs are usually **rejected** by WordPress SSRF protections
+
+### Without a media base URL
+
+Posts still import, but `/media/...` links in HTML stay relative and will not resolve on WordPress. Stage media before export if you want images and video to survive migration.
+
+Full matrix and edge cases: [Media details](#media-details).
+
+---
+
+## 4. Download the export
 
 ### From Settings
 
 1. Open tumbl **Settings** (gear icon).
 2. Scroll to **WordPress export**.
 3. Adjust options if needed:
-   - **Post URL template** — customize link format
+   - **Post URL template** — WXR link/GUID metadata only (see [URL template vs real permalinks](#url-template-vs-real-permalinks))
    - **Posts per page** — for `{page}` calculation
    - **Match target site colors and fonts** — fetch theme styles; enables a companion `.css` download
    - **Minimal export** — strip Tumblr/tumbl branding from metadata
@@ -140,13 +225,16 @@ Query parameters override env defaults for a single download:
 
 ---
 
-## 4. Import into WordPress
+## 5. Import into WordPress
+
+This is the full process from a staged archive to verified posts.
 
 ### Before you import
 
-- **Back up your existing WordPress site** (database + uploads) before importing.
-- Confirm `WORDPRESS_EXPORT_AUTHOR` matches an existing user, or plan to create/assign one during import.
-- If you need images in WordPress, set up [media hosting](#media-limitations) first.
+1. **Back up** your existing WordPress site (database + `wp-content/uploads`).
+2. Confirm `WORDPRESS_EXPORT_AUTHOR` matches a user you will map to, or plan to create/assign one during import.
+3. If you need images/video: finish [staging media](#3-stage-media-on-public-https) and set `WORDPRESS_EXPORT_MEDIA_BASE_URL`, then re-download the WXR so attachment URLs are included.
+4. Optionally review **Settings → Permalinks** on WordPress so you know how new posts will be addressed on the front end.
 
 ### Import steps
 
@@ -158,14 +246,17 @@ Query parameters override env defaults for a single download:
 6. On the author mapping screen:
    - **Import author** — create the author from the export, or
    - **Assign posts to an existing user** — recommended for existing sites
-7. Check **Download and import file attachments** only if you configured `WORDPRESS_EXPORT_MEDIA_BASE_URL` and media is publicly reachable (see [Media](#media-limitations)).
-8. Click **Submit** and wait for the import to finish.
+7. Check **Download and import file attachments** only if you configured `WORDPRESS_EXPORT_MEDIA_BASE_URL` and that URL is publicly reachable from WordPress.
+8. Click **Submit** and wait for the import to finish. Large archives may need a higher PHP `max_execution_time` on self-hosted WordPress.
 
-### After import
+### After import — verify structure
 
-- Browse your site and confirm posts appear with correct dates, tags, and content.
-- WordPress may assign its own permalinks based on your site's permalink settings; the URLs in the WXR file are used for GUIDs and reference during import.
-- If you enabled **minimal export**, imported posts will not include `_tumblr_*` custom fields or tumbl generator metadata.
+1. Open **Posts → All Posts**. You should see **one new post per Tumblr post**, not a single Page holding everything.
+2. Open several posts and confirm dates, tags, and HTML content look right.
+3. If you imported attachments: open **Media → Library** and confirm files arrived; open a photo/video post on the front end and confirm media loads.
+4. Spot-check front-end permalinks — they follow WordPress permalink settings, not necessarily the export URL template.
+5. If you used theme matching, paste the companion CSS (next section).
+6. Optionally remove the temporary public `media/` staging folder once attachments live in the Media Library.
 
 ### WordPress.com
 
@@ -173,7 +264,7 @@ WordPress.com users can use **Tools → Import → WordPress** on eligible plans
 
 ---
 
-## 5. (Optional) Match colors and fonts
+## 6. (Optional) Match colors and fonts
 
 When **Match target site colors and fonts** is enabled, tumbl fetches your WordPress site's homepage and extracts typography and color tokens (from block-theme global styles or classic theme CSS).
 
@@ -196,7 +287,7 @@ If theme fetch fails (site unreachable, blocked, etc.), tumbl exports without th
 
 ---
 
-## 6. Minimal export
+## 7. Minimal export
 
 Enable **Minimal export** (or `WORDPRESS_EXPORT_MINIMAL=true` / `?minimal=1`) for a neutral import without Tumblr/tumbl branding:
 
@@ -215,18 +306,20 @@ Post HTML content is identical in both modes.
 
 ## What gets exported
 
-Each Tumblr post becomes a WordPress `post` with:
+Each Tumblr post becomes a WordPress **Post** with:
 
 - HTML body content (same sanitized HTML shown in tumbl, wrapped with `id="post-{id}"`)
 - Tags as WordPress post tags
 - Publish date from the archive timestamp
 - Unique WordPress slug (`wp:post_name`)
-- Link and GUID from your URL template
+- Link and GUID from your URL template (metadata only; see [permalinks](#url-template-vs-real-permalinks))
 - Custom Tumblr meta (unless minimal mode): source URL, reblog parent, post type, submission flag
+
+When `WORDPRESS_EXPORT_MEDIA_BASE_URL` is set, referenced `/media/` files also become WXR **attachment** items so WordPress can download them into the Media Library.
 
 ---
 
-## Media limitations
+## Media details
 
 WXR does **not** embed media files. WordPress imports attachments by downloading each `wp:attachment_url` from a URL it can reach.
 
@@ -243,15 +336,16 @@ WXR does **not** embed media files. WordPress imports attachments by downloading
 Example:
 
 ```bash
-WORDPRESS_EXPORT_MEDIA_BASE_URL=https://cdn.example.com/tumblr-media
+WORDPRESS_EXPORT_MEDIA_BASE_URL=https://usersite.com/tumblr-media
 ```
 
-### Workarounds for local archives
+### Typical workflow on WordPress hosting
 
-1. Upload your archive's `media/` folder to temporary public storage (S3, Cloudflare R2, a static file host, or a tunnel like ngrok).
-2. Set `WORDPRESS_EXPORT_MEDIA_BASE_URL` to that base URL during export.
-3. Import with **Download and import file attachments** checked.
-4. Remove or rotate the public media hosting after import if desired.
+1. Upload your archive's `media/` folder to a public path on your WordPress host (or CDN).
+2. Set `WORDPRESS_EXPORT_MEDIA_BASE_URL` to that base URL and restart tumbl if needed.
+3. Re-download the WXR so attachment URLs are present.
+4. Import with **Download and import file attachments** checked.
+5. Remove or keep the staging copy after import as you prefer.
 
 Alternative: import posts first without attachments, then upload media manually or fix links later. Posts that still reference Tumblr CDN URLs in the HTML may keep working if those URLs are live.
 
@@ -264,7 +358,7 @@ Alternative: import posts first without attachments, then upload media manually 
 | `WORDPRESS_EXPORT_ENABLED` | `false` | Enable export routes |
 | `WORDPRESS_EXPORT_AUTHOR` | `admin` | Author login for imported posts |
 | `WORDPRESS_EXPORT_SITE_URL` | `https://example.com` | Existing site root URL |
-| `WORDPRESS_EXPORT_URL_TEMPLATE` | `{site_url}/blog/?page={page}#post-{id}` | Post link/GUID template |
+| `WORDPRESS_EXPORT_URL_TEMPLATE` | `{site_url}/blog/?page={page}#post-{id}` | Post link/GUID template (not final WP structure) |
 | `WORDPRESS_EXPORT_POSTS_PER_PAGE` | `20` | Posts per feed page for `{page}` |
 | `WORDPRESS_EXPORT_MEDIA_BASE_URL` | _(empty)_ | Public base URL for archive media |
 | `WORDPRESS_EXPORT_MATCH_THEME` | `false` | Fetch target site colors/fonts by default |
@@ -287,7 +381,8 @@ WXR export works from any format tumbl can index:
 | Problem | Things to try |
 |---------|---------------|
 | Export link missing | Set `WORDPRESS_EXPORT_ENABLED=true` and restart tumbl |
-| Wrong post URLs after import | WordPress generates permalinks from site settings; URL template affects WXR metadata, not necessarily final permalinks |
+| Expected one Page, got many Posts | That is correct — see [What you get in WordPress](#what-you-get-in-wordpress-structure) |
+| Wrong post URLs after import | WordPress generates permalinks from **Settings → Permalinks**; the URL template only affects WXR metadata |
 | Theme CSS download 404 | Enable **Match target site colors and fonts** or add `?match_theme=1`; site must be reachable from tumbl |
 | Images broken after import | Set `WORDPRESS_EXPORT_MEDIA_BASE_URL` to a public URL; re-export and re-import attachments, or fix links manually |
 | Import times out | Large archives may need increased PHP `max_execution_time` on self-hosted WordPress |

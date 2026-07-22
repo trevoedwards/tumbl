@@ -1,10 +1,6 @@
 # tumbl
 
-Self-hosted viewer for Tumblr blog backup exports. 
-
-Point it at an archive folder and browse your posts locally in a classic Tumblr-style theme. 
-
-No account required, no data sent anywhere.
+Self-hosted viewer for Tumblr blog backup exports. Point it at an archive folder and browse your posts locally in a classic Tumblr-style theme. No account required, no data sent anywhere.
 
 [![Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg)](https://www.python.org/downloads/)
 [![Flask](https://img.shields.io/badge/flask-3.x-green.svg)](https://flask.palletsprojects.com/)
@@ -17,16 +13,12 @@ No account required, no data sent anywhere.
 
 ## Features
 
-- Paginated feed, full-text search, tag cloud, and date archive
-- Post type filters (photo, audio, video, text), photo lightbox, and **Random** post (`/random`)
-- Permalink pages with Open Graph previews (`og:image`, `og:site_name`) for sharing
-- Edit post tags on permalink pages (saved to cache overrides; original backup unchanged)
+- Paginated feed, full-text search, tag cloud, date archive, and post type filters (photo, audio, video, text)
+- Permalink pages with Open Graph previews, editable tags (saved to cache; original backup unchanged), photo lightbox, and **Random** post (`/random`)
 - Keyboard shortcuts: **`/`** search, **`j`/`k`** navigate posts, **`?`** show hints
 - **View on Tumblr** links and reblog context when export metadata includes them
-- Legacy, modern, and tumblr-utils export formats
-- Optional WordPress WXR export for migrating offline backups to WordPress
-- Auto-extract `posts.zip`, background indexing with progress, persistent cache
-- Docker-first, fully offline
+- Legacy, modern, and tumblr-utils export formats; optional WordPress WXR export (each Tumblr post → individual WordPress Post)
+- Auto-extract `posts.zip`, background indexing with progress, persistent cache; Docker-first, fully offline
 
 ## Supported export formats
 
@@ -61,44 +53,7 @@ First launch indexes posts in the background (often 20–30 seconds for a few th
 | `BACKGROUND_IMAGE` | _(empty)_ | Optional default background: HTTPS URL or file path under the archive/app root |
 | `TAG_EDITING_ENABLED` | `true` | Allow editing tags on permalink pages (saved to `CACHE_DIR`) |
 
-### Optional: WordPress export
-
-Disabled by default. See **[WordPress export](docs/wordpress-export.md)** for import steps and media notes.
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `WORDPRESS_EXPORT_ENABLED` | `false` | Enable WXR export at `/export/wordpress.xml` |
-| `WORDPRESS_EXPORT_AUTHOR` | `admin` | Author login for imported posts |
-| `WORDPRESS_EXPORT_SITE_URL` | `https://example.com` | Existing WordPress site root URL |
-| `WORDPRESS_EXPORT_URL_TEMPLATE` | `{site_url}/blog/?page={page}#post-{id}` | Post link/GUID template |
-| `WORDPRESS_EXPORT_POSTS_PER_PAGE` | `20` | Posts per feed page for `{page}` in URL template |
-| `WORDPRESS_EXPORT_MEDIA_BASE_URL` | _(empty)_ | Optional public base URL for archive media |
-| `WORDPRESS_EXPORT_MATCH_THEME` | `false` | Fetch target site colors/fonts for export |
-| `WORDPRESS_EXPORT_MINIMAL` | `false` | Strip Tumblr/tumbl branding from export metadata |
-
-Full walkthrough: [docs/wordpress-export.md](docs/wordpress-export.md).
-
-See [docker-compose.yml](docker-compose.yml) example.
-
-## How it works
-
-```mermaid
-flowchart TD
-    Archive["Tumblr backup folder"] --> Detect["archive_detect.py"]
-    Detect --> Legacy["legacy_html parser"]
-    Detect --> Modern["modern_xml parser"]
-    Detect --> Utils["tumblr_utils parser"]
-    Legacy --> Index["PostMeta index"]
-    Modern --> Index
-    Utils --> Index
-    Index --> Cache["JSON cache volume"]
-    Index --> Flask["Flask + Gunicorn"]
-    Flask --> Feed["Feed, search, tags, archive"]
-    Flask --> Media["/media/ static files"]
-    Flask --> WXR["Optional WXR export"]
-```
-
-On startup, tumbl detects the export format, builds a normalized post index (cached to disk), and serves paginated views plus local media from the archive.
+Optional WordPress WXR export is disabled by default (`WORDPRESS_EXPORT_ENABLED=false`). Each Tumblr post imports as an individual WordPress Post (not one Page). See **[WordPress export](docs/wordpress-export.md)** for structure, import walkthrough, media staging, and env vars — or [docker-compose.yml](docker-compose.yml) for a commented example.
 
 ## Development
 
@@ -109,16 +64,6 @@ pip install -r requirements.txt
 set ARCHIVE_PATH=.tumblrbackup   # Windows
 export ARCHIVE_PATH=.tumblrbackup  # macOS/Linux
 python -m flask --app app.main run --debug
-```
-
-```
-tumbl/
-├── app/                  # Flask app, parsers, static assets, templates
-├── docs/                 # export-formats.md, wordpress-export.md, security.md, performance.md
-├── tests/
-├── docker-compose.yml
-├── Dockerfile
-└── requirements.txt
 ```
 
 **Force index rebuild** — delete cache files and restart:
@@ -143,13 +88,6 @@ HTML sanitization, zip guards, path validation, and security headers are documen
 ## Roadmap
 
 - [ ] Messaging / conversations viewer (`messages.xml`)
-- [x] Open Graph images on permalink pages
-- [x] Random post (`/random`)
-- [x] Keyboard shortcuts, Tumblr/reblog links, lazy-loaded images
-- [x] Full-text search, tag cloud, date archive
-- [x] tumblr-utils support, auto-extract `posts.zip`, photo lightbox
-- [x] Post type filters, async indexing, theme customization
-- [x] Optional WordPress WXR export for offline Tumblr backups
 
 ## Contributing
 
