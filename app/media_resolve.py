@@ -6,11 +6,15 @@ import re
 from pathlib import Path
 
 MEDIA_EXTENSIONS = (".jpg", ".jpeg", ".png", ".gif", ".webp", ".mp4", ".mov", ".mp3", ".m4a")
+AUDIO_EXTENSIONS = (".mp3", ".m4a")
+VIDEO_EXTENSIONS = (".mp4", ".mov")
+IMAGE_EXTENSIONS = (".jpg", ".jpeg", ".png", ".gif", ".webp")
 
 IMG_SRC_RE = re.compile(
     r"""src=(["']?)(/media/([^"'>\s]+))\1""",
     re.IGNORECASE,
 )
+MEDIA_REF_RE = re.compile(r"/media/([^\"'>\s]+)", re.IGNORECASE)
 
 
 def _post_id_from_media_name(name: str) -> str | None:
@@ -89,6 +93,40 @@ def media_url(path: Path) -> str:
     return f"/media/{path.name}"
 
 
+def _referenced_media_names(body_html: str) -> set[str]:
+    return {match.group(1) for match in MEDIA_REF_RE.finditer(body_html)}
+
+
+def _render_media_markup(path: Path) -> str:
+    url = media_url(path)
+    suffix = path.suffix.lower()
+    if suffix in AUDIO_EXTENSIONS:
+        return f'<audio controls preload="metadata" src="{url}"></audio>'
+    if suffix in VIDEO_EXTENSIONS:
+        return (
+            f'<div class="video-embed">'
+            f'<video controls preload="metadata" src="{url}"></video>'
+            f"</div>"
+        )
+    return f'<img src="{url}" alt="">'
+
+
+def unreferenced_local_media(body_html: str, local_files: list[Path]) -> list[Path]:
+    """Return local media files not already referenced as ``/media/...`` in HTML."""
+    referenced = _referenced_media_names(body_html)
+    return [path for path in local_files if path.name not in referenced]
+
+
+def _inject_unreferenced_media(body_html: str, local_files: list[Path]) -> str:
+    blocks = [_render_media_markup(path) for path in unreferenced_local_media(body_html, local_files)]
+    if not blocks:
+        return body_html
+    prefix = "\n".join(blocks)
+    if body_html.strip():
+        return f"{prefix}\n{body_html}"
+    return prefix
+
+
 def resolve_post_media_refs(
     body_html: str,
     post_id: str,
@@ -106,41 +144,39 @@ def resolve_post_media_refs(
     local_urls = [media_url(path) for path in local_files]
 
     matches = list(IMG_SRC_RE.finditer(body_html))
-    if not matches:
-        return body_html
+    if matches:
+        ref_names = [match.group(3) for match in matches]
 
-    ref_names = [match.group(3) for match in matches]
-
-    def _ref_is_valid(name: str) -> bool:
-        if name in local_name_set:
-            return True
-        if not _media_name_belongs_to_post(name, post_id):
+        def _ref_is_valid(name: str) -> bool:
+            if name in local_name_set:
+                return True
+            if not _media_name_belongs_to_post(name, post_id):
+                return False
+            candidate = media_dir / name
+            if candidate.is_file():
+                return True
+            if media_dir.is_dir():
+                return any(
+                    path.is_file() and path.name.lower() == name.lower()
+                    for path in media_dir.iterdir()
+                )
             return False
-        candidate = media_dir / name
-        if candidate.is_file():
-            return True
-        if media_dir.is_dir():
-            return any(
-                path.is_file() and path.name.lower() == name.lower()
-                for path in media_dir.iterdir()
-            )
-        return False
 
-    if all(_ref_is_valid(name) for name in ref_names):
-        return body_html
+        if not all(_ref_is_valid(name) for name in ref_names):
+            local_idx = 0
 
-    local_idx = 0
+            def replacer(match: re.Match[str]) -> str:
+                nonlocal local_idx
+                quote = match.group(1) or '"'
+                name = match.group(3)
+                if _ref_is_valid(name):
+                    return match.group(0)
+                if local_urls:
+                    url = local_urls[local_idx % len(local_urls)]
+                    local_idx += 1
+                    return f"src={quote}{url}{quote}"
+                return match.group(0)
 
-    def replacer(match: re.Match[str]) -> str:
-        nonlocal local_idx
-        quote = match.group(1) or '"'
-        name = match.group(3)
-        if _ref_is_valid(name):
-            return match.group(0)
-        if local_urls:
-            url = local_urls[local_idx % len(local_urls)]
-            local_idx += 1
-            return f"src={quote}{url}{quote}"
-        return match.group(0)
+            body_html = IMG_SRC_RE.sub(replacer, body_html)
 
-    return IMG_SRC_RE.sub(replacer, body_html)
+    return _inject_unreferenced_media(body_html, local_files)

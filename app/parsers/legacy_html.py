@@ -95,7 +95,10 @@ def parse_post_file(
     if not body:
         return None
 
-    footer = body.find("div", id="footer")
+    # Reblogs embed the parent post's HTML (including its #footer) before this post's
+    # own footer. Use the last footer so tags/timestamp match the reblogging post.
+    footers = body.find_all("div", id="footer")
+    footer = footers[-1] if footers else None
     timestamp = ""
     tags: list[str] = []
 

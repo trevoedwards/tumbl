@@ -105,6 +105,39 @@ class TumblrUtilsParserTests(unittest.TestCase):
         assert post is not None
         self.assertEqual(post.tags, ["Nature"])
 
+    def test_reblog_uses_last_footer_for_tags(self) -> None:
+        reblog = textwrap.dedent(
+            """\
+            <!DOCTYPE html>
+            <html>
+            <body>
+            <article data-type="photo">
+                <footer>
+                    <time>January 1st, 2017 12:00pm</time>
+                    <a href="/tagged/quotes">#quotes</a>
+                    <a href="/tagged/raymond-chandler">#raymond chandler</a>
+                </footer>
+                <img src="media/999.jpg" alt="">
+            </article>
+            <article data-type="photo">
+                <img src="media/999.jpg" alt="">
+                <p>Batman panel</p>
+            </article>
+            <footer>
+                <time>June 6th, 2020 6:00pm</time>
+                <a href="/tagged/batman">#batman</a>
+                <a href="/tagged/comics">#comics</a>
+            </footer>
+            </body>
+            </html>
+            """
+        )
+        (self.archive_root / "posts" / "999.html").write_text(reblog, encoding="utf-8")
+        post = parse_post_file(self.archive_root / "posts" / "999.html", self.archive_root)
+        assert post is not None
+        self.assertEqual(post.tags, ["batman", "comics"])
+        self.assertEqual(post.timestamp, "June 6th, 2020 6:00pm")
+
 
 if __name__ == "__main__":
     unittest.main()

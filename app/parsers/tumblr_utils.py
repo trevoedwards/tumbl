@@ -42,7 +42,8 @@ def parse_post_file(
         return None
 
     soup = BeautifulSoup(raw, "lxml")
-    footer = soup.find("footer")
+    footers = soup.find_all("footer")
+    footer = footers[-1] if footers else None
     timestamp = ""
     tags: list[str] = []
     tag_lower: set[str] = set()

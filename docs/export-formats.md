@@ -19,9 +19,11 @@ archive/
             └── {postId}.html
 ```
 
-Timestamps and tags are parsed from each post HTML file's footer. Submission posts live under `posts/html/submissions/`.
+Timestamps and tags are parsed from each post HTML file's footer (the **last** `#footer` / `<footer>` in the file — reblogs embed the parent post's footer first). Submission posts live under `posts/html/submissions/`.
 
 **Known export quirk:** Some legacy exports write the same wrong local media path (often another post's `{postId}.png`) into many unrelated post HTML files. tumbl corrects this at index time when matching `{postId}.*` files exist in `media/`—including photosets where every `<img>` was given the same placeholder path. Posts with no `{postId}.*` file on disk keep the export's original reference; a fresh full extract from the original ZIP may recover missing files if the export itself is complete.
+
+**Omitted `<img>` tags:** Many legacy photo, link, and Instagram posts ship with a caption or empty link wrapper but no `<img>` in the HTML, even when `media/{postId}.*` exists on disk. tumbl injects those local files into the post body at index time (same behavior as the modern XML parser), so the viewer and WordPress export include the image.
 
 **If images are still wrong after indexing:** Extract the original Tumblr backup ZIP into a clean folder (do not merge with an old extract), mount that folder as `ARCHIVE_PATH`, and delete the index cache so tumbl rebuilds:
 

@@ -313,7 +313,8 @@ Each Tumblr post becomes a WordPress **Post** with:
 - HTML body content (same sanitized HTML shown in tumbl, wrapped with `id="post-{id}"`)
 - Tags as WordPress post tags
 - Publish date from the archive timestamp
-- Unique WordPress slug (`wp:post_name`)
+- Unique WordPress slug (`wp:post_name`) — `tumblr-{tumblrId}` or `post-{tumblrId}` in minimal mode
+- Safe sequential WordPress post ID (`wp:post_id` = 1, 2, 3, …) so Gutenberg can edit posts; original Tumblr ID stored in `_tumblr_post_id` meta
 - Link and GUID from your URL template (metadata only; see [permalinks](#url-template-vs-real-permalinks))
 - Custom Tumblr meta (unless minimal mode): source URL, reblog parent, post type, submission flag
 
@@ -390,6 +391,98 @@ WXR export works from any format tumbl can index:
 | Images broken after import | Set `WORDPRESS_EXPORT_MEDIA_BASE_URL` to a public URL; re-export and re-import attachments, or fix links manually |
 | Import times out | Large archives may need increased PHP `max_execution_time` on self-hosted WordPress |
 | Duplicate posts on re-import | WordPress importer may create duplicates; use a fresh site or delete previously imported posts first |
+| Need to fix media-only posts after a tumbl upgrade | Do **not** re-import the full WXR. Use the [content patch](#fix-orphan-media-posts-without-re-importing) scripts below |
+| "You attempted to edit an item that doesn't exist" in Gutenberg | Older tumbl exports used Tumblr snowflake IDs as `wp:post_id`, which exceed JavaScript's safe integer limit. See [Remap unsafe post IDs](#remap-unsafe-post-ids-on-an-existing-site) |
+| Cannot create new posts after import | `wp_posts` AUTO_INCREMENT may be stuck at a huge Tumblr ID; run the remapper below |
+
+---
+
+## Remap unsafe post IDs on an existing site
+
+**Symptom:** Some imported posts open on the front end but fail in the block editor with *"You attempted to edit an item that doesn't exist."* This affects posts whose WordPress `ID` is a 16-digit Tumblr snowflake (above `9007199254740991`). Older posts with shorter IDs are unaffected.
+
+**Cause:** Early tumbl WXR exports wrote the Tumblr ID into `wp:post_id`. Gutenberg rounds those IDs in JavaScript and the REST API returns 404.
+
+**Fix:** Remap unsafe IDs to safe sequential values. Slugs (`tumblr-{id}`) and front-end URLs stay the same.
+
+1. **Back up** your WordPress database.
+2. Copy [`scripts/remap_wordpress_unsafe_ids.php`](../scripts/remap_wordpress_unsafe_ids.php) to your server.
+3. Dry-run, then apply:
+
+```bash
+# WP-CLI (from WordPress root):
+wp eval-file /path/to/remap_wordpress_unsafe_ids.php -- --dry-run
+wp eval-file /path/to/remap_wordpress_unsafe_ids.php -- --apply
+```
+
+**Without SSH:** upload the file to `wp-content/mu-plugins/`, then visit (while logged in as admin):
+
+```
+/wp-admin/?tumbl_remap_unsafe_ids=1&dry_run=1&_wpnonce=NONCE
+/wp-admin/?tumbl_remap_unsafe_ids=1&apply=1&_wpnonce=NONCE
+```
+
+Replace `NONCE` with the value WordPress prints if the nonce is missing. Delete the mu-plugin file after a successful run.
+
+4. Confirm a previously broken post opens in the editor.
+5. Confirm **Posts → Add New** still works.
+
+Future WXR exports from tumbl use safe sequential IDs automatically; re-import is not required.
+
+---
+
+## Fix orphan-media posts without re-importing
+
+If posts already exist in WordPress but are missing images that tumbl now injects from `media/`, update **only those posts** in place:
+
+1. Rebuild tumbl's index (restart, or delete `cache/index-*.json`) so the fix is live.
+2. Confirm `WORDPRESS_EXPORT_MEDIA_BASE_URL` still points at your public staged `media/` folder.
+3. Export a patch of affected posts only:
+
+```bash
+# Docker (recommended if local Python is older than 3.12):
+docker compose -f docker-compose.dev.yml run --rm --no-deps \
+  -v "${PWD}:/work" -w /work tumbl \
+  python scripts/export_wordpress_content_patch.py
+
+# Smoke-test a single post first:
+docker compose -f docker-compose.dev.yml run --rm --no-deps \
+  -v "${PWD}:/work" -w /work tumbl \
+  python scripts/export_wordpress_content_patch.py --ids 123456789012
+```
+
+4. Create a WordPress **Application Password** (Users → Profile).
+5. Dry-run, then apply via the REST API:
+
+```bash
+set WP_URL=https://blog.example.com
+set WP_USER=your_username
+set WP_APP_PASSWORD=xxxx xxxx xxxx xxxx xxxx xxxx
+
+python scripts/apply_wordpress_content_patch.py --dry-run --limit 1
+python scripts/apply_wordpress_content_patch.py --limit 1   # verify that one post in WP
+python scripts/apply_wordpress_content_patch.py             # remaining ~1.8k posts
+```
+
+The applicator looks up each post by slug (`tumblr-{id}` or `post-{id}` in minimal mode) and overwrites `content` only. Unaffected posts are never touched. Images load from `WORDPRESS_EXPORT_MEDIA_BASE_URL` in the updated HTML (Media Library re-import is not required if that URL is still public).
+
+---
+
+## Fix wrong tags on reblog posts without re-importing
+
+**Symptom:** Posts show unrelated tags (e.g. a Batman comic tagged `quotes` and `raymond chandler` from an embedded quote reblog).
+
+**Cause:** Legacy HTML and tumblr-utils backups embed the parent post's full HTML, including its footer. Older tumbl builds read tags from the **first** footer instead of this post's own footer at the end of the file.
+
+**Fix in tumbl:** Rebuild the index (cache schema bump or delete `cache/index-*.json`), then export and apply a tags patch:
+
+```bash
+python scripts/export_wordpress_tags_patch.py
+python scripts/apply_wordpress_tags_patch.py --dry-run --limit 1
+python scripts/apply_wordpress_tags_patch.py
+```
+
+The applicator replaces each post's `post_tag` terms by slug. Future WXR exports use the corrected tags automatically.
 
 ---
 

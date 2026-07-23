@@ -42,6 +42,30 @@ SAMPLE_SUBMISSION_HTML = textwrap.dedent(
     """
 )
 
+SAMPLE_REBLOG_HTML = textwrap.dedent(
+    """\
+    <!DOCTYPE HTML>
+    <html>
+        <body>
+            <blockquote class="post_content">
+                <p>Parent quote text</p>
+                <div id="footer">
+                    <span id="timestamp">March 1st, 2019 8:00am</span>
+                    <span class="tag">quotes</span>
+                    <span class="tag">raymond chandler</span>
+                </div>
+            </blockquote>
+            <img src="../../media/77777.jpg"/>
+            <div id="footer">
+                <span id="timestamp">April 5th, 2020 9:00pm</span>
+                <span class="tag">batman</span>
+                <span class="tag">comics</span>
+            </div>
+        </body>
+    </html>
+    """
+)
+
 
 class LegacyHtmlParserTests(unittest.TestCase):
     def setUp(self) -> None:
@@ -88,6 +112,15 @@ class LegacyHtmlParserTests(unittest.TestCase):
         self.assertEqual(len(posts), 2)
         ids = {post.id for post in posts}
         self.assertEqual(ids, {"12345", "99999"})
+
+    def test_reblog_uses_last_footer_for_tags(self) -> None:
+        (self.html_dir / "77777.html").write_text(SAMPLE_REBLOG_HTML, encoding="utf-8")
+        post = parse_post_file(self.html_dir / "77777.html", self.archive_root)
+        assert post is not None
+        self.assertEqual(post.tags, ["batman", "comics"])
+        self.assertEqual(post.timestamp, "April 5th, 2020 9:00pm")
+        self.assertIn("quotes", post.body_html)
+        self.assertNotIn('class="tag">comics', post.body_html)
 
 
 if __name__ == "__main__":

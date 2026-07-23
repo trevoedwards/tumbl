@@ -4,6 +4,10 @@
 .staging/
 .cache/
 
+# --- Generated WordPress patches (may contain site URLs and full post HTML) ---
+wordpress-content-patch*.json
+wordpress-tags-patch*.json
+
 # --- Local Docker Compose (edit freely; see docker-compose.dev.yml.example) ---
 docker-compose.dev.yml
 docker-compose.override.yml

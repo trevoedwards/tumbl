@@ -21,6 +21,7 @@ from app.exporters.wordpress_wxr import (
     rewrite_media_urls,
     slugify,
     validate_url_template,
+    wordpress_post_id,
     wrap_post_html,
 )
 from app.parsers.base import PostMeta
@@ -72,6 +73,10 @@ class WordPressWxrTests(unittest.TestCase):
         self.assertEqual(post_page_number(0, 20), 1)
         self.assertEqual(post_page_number(19, 20), 1)
         self.assertEqual(post_page_number(20, 20), 2)
+
+    def test_wordpress_post_id_is_sequential_and_safe(self) -> None:
+        self.assertEqual(wordpress_post_id(0), 1)
+        self.assertEqual(wordpress_post_id(99), 100)
 
     def test_export_filename(self) -> None:
         self.assertEqual(export_filename(minimal=False), "tumblr-wordpress-export.xml")
@@ -142,6 +147,9 @@ class WordPressWxrTests(unittest.TestCase):
         self.assertIn("<wp:post_type>post</wp:post_type>", xml)
         self.assertIn("<wp:status>publish</wp:status>", xml)
         self.assertIn("<wp:post_name>tumblr-12345</wp:post_name>", xml)
+        self.assertIn("<wp:post_id>1</wp:post_id>", xml)
+        self.assertIn("_tumblr_post_id", xml)
+        self.assertIn("12345", xml)
         self.assertIn('domain="post_tag"', xml)
         self.assertIn("photography", xml)
         self.assertIn("_tumblr_source_url", xml)
@@ -158,9 +166,25 @@ class WordPressWxrTests(unittest.TestCase):
             options=ExportOptions(minimal=True),
         )
         self.assertIn("<wp:post_name>post-12345</wp:post_name>", xml)
+        self.assertIn("_tumblr_post_id", xml)
         self.assertNotIn("_tumblr_source_url", xml)
         self.assertNotIn("github.com/trevoedwards/tumbl", xml)
         self.assertIn("<description>My Blog</description>", xml)
+
+    def test_generate_wxr_uses_safe_ids_for_snowflake_tumblr_ids(self) -> None:
+        snowflake = "635456269566738432"
+        xml = generate_wxr(
+            [_sample_post(id=snowflake)],
+            site_url="https://usersite.com",
+            author="admin",
+            blog_title="My Blog",
+            media_base_url="https://cdn.example.com/archive-media",
+        )
+        self.assertIn("<wp:post_id>1</wp:post_id>", xml)
+        self.assertIn(f"<wp:post_name>tumblr-{snowflake}</wp:post_name>", xml)
+        self.assertIn(f"<wp:meta_value>{snowflake}</wp:meta_value>", xml)
+        self.assertIn("<wp:post_parent>1</wp:post_parent>", xml)
+        self.assertNotIn(f"<wp:post_id>{snowflake}</wp:post_id>", xml)
 
     def test_generate_wxr_paginated_urls(self) -> None:
         posts = [_sample_post(id=str(100 + index)) for index in range(21)]
@@ -201,7 +225,7 @@ class WordPressWxrTests(unittest.TestCase):
             "<wp:attachment_url>https://cdn.example.com/archive-media/12345.jpg</wp:attachment_url>",
             xml,
         )
-        self.assertIn("<wp:post_parent>12345</wp:post_parent>", xml)
+        self.assertIn("<wp:post_parent>1</wp:post_parent>", xml)
 
 
 class WordPressThemeTests(unittest.TestCase):

@@ -40,6 +40,8 @@ FULL_TIMESTAMP_RE = re.compile(
 )
 SLUG_SAFE_RE = re.compile(r"[^a-z0-9\-]+")
 ATTACHMENT_ID_BASE = 900_000_000
+# JavaScript Number.MAX_SAFE_INTEGER — Gutenberg cannot edit posts above this.
+JS_MAX_SAFE_INTEGER = 9_007_199_254_740_991
 # XML 1.0 disallows most C0 controls; strip them so importers can parse the file.
 _INVALID_XML_CHARS_RE = re.compile(r"[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]")
 
@@ -114,6 +116,11 @@ def post_page_number(index: int, posts_per_page: int) -> int:
     """Return a 1-based feed page number for a post at ``index`` (newest first)."""
     per_page = max(1, posts_per_page)
     return (index // per_page) + 1
+
+
+def wordpress_post_id(post_index: int) -> int:
+    """Return a safe sequential WordPress post ID for export position ``post_index``."""
+    return post_index + 1
 
 
 def export_filename(*, minimal: bool) -> str:
@@ -274,6 +281,7 @@ def _add_post_item(
     body_html: str,
     options: ExportOptions,
     post_index: int,
+    wp_post_id: int,
 ) -> None:
     slug = post_slug(post.id, minimal=options.minimal)
     post_date, post_date_gmt = parse_post_datetime(post.timestamp)
@@ -298,12 +306,7 @@ def _add_post_item(
     _cdata_element(item, "encoded", WXR_NS["content"], body_html)
     _cdata_element(item, "encoded", WXR_NS["excerpt"], "")
 
-    try:
-        wp_post_id = str(int(post.id))
-    except ValueError:
-        wp_post_id = post.id
-
-    _wp_el(item, "post_id", wp_post_id)
+    _wp_el(item, "post_id", str(wp_post_id))
     _wp_el(item, "post_date", post_date)
     _wp_el(item, "post_date_gmt", post_date_gmt)
     _wp_el(item, "comment_status", "closed")
@@ -317,6 +320,8 @@ def _add_post_item(
     _wp_el(item, "is_sticky", "0")
 
     _add_tag_categories(item, post.tags)
+
+    _add_post_meta(item, "_tumblr_post_id", post.id)
 
     if options.minimal:
         return
@@ -442,6 +447,7 @@ def generate_wxr(
             body_html = rewrite_media_urls(body_html, media_base)
         body_html = wrap_post_html(body_html, post.id, theme_styles)
 
+        wp_post_id = wordpress_post_id(post_index)
         _add_post_item(
             channel,
             post,
@@ -450,16 +456,13 @@ def generate_wxr(
             body_html=body_html,
             options=export_options,
             post_index=post_index,
+            wp_post_id=wp_post_id,
         )
 
         if not media_base:
             continue
 
         post_date, post_date_gmt = parse_post_datetime(post.timestamp)
-        try:
-            parent_post_id = str(int(post.id))
-        except ValueError:
-            parent_post_id = post.id
 
         for filename in extract_media_filenames(post.body_html):
             attachment_counter += 1
@@ -467,7 +470,7 @@ def generate_wxr(
             _add_attachment_item(
                 channel,
                 attachment_id=attachment_counter,
-                parent_post_id=parent_post_id,
+                parent_post_id=str(wp_post_id),
                 filename=filename,
                 attachment_url=attachment_url,
                 author=author,
