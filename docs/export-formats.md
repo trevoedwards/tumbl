@@ -1,6 +1,13 @@
 # Export formats
 
-tumbl supports three Tumblr backup layouts. Use the summary table in the [README](../README.md#supported-export-formats) to identify which one you have; the sections below describe each layout in detail.
+tumbl supports three Tumblr backup layouts. Use the table below to identify which one you have; the sections that follow describe each layout in detail.
+
+| Format | Source | Layout signature | Status |
+|--------|--------|------------------|--------|
+| [Legacy HTML backup](#legacy-html-backup-format-a) | Tumblr (early export) | `posts/html/*.html` + `media/` | Supported |
+| [Official Tumblr ZIP](#modern-official-export-format-b) | [Settings → Export](https://help.tumblr.com/export-your-blog/) | `posts/posts.xml` + `media/` | Supported |
+| [tumblr-utils](#tumblr-utils-backup-format-c) | [bbolli/tumblr-utils](https://github.com/bbolli/tumblr-utils) | `index.html` + `posts/*.html` | Supported |
+| [Privacy data JSON](#out-of-scope) | Account settings download | JSON account dump | Out of scope |
 
 ## Legacy HTML backup (Format A)
 

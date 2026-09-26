@@ -490,4 +490,4 @@ The applicator replaces each post's `post_tag` terms by slug. Future WXR exports
 
 - [Quick start](wordpress-export-quickstart.md) — condensed step-by-step version of this guide
 - [Export formats](export-formats.md) — Tumblr backup layouts tumbl accepts
-- [README](../README.md) — Environment variable summary
+- [Configuration](configuration.md) — core environment variables

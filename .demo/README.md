@@ -23,7 +23,13 @@ export ARCHIVE_PATH=.demo/data
 export BLOG_TITLE="Archive Demo"
 ```
 
-Then start the app (`python -m app.main`, `flask run`, or Docker with `ARCHIVE_PATH` overridden).
+Then start the app:
+
+```bash
+python -m flask --app app.main run --port 8862
+```
+
+Or use Docker with the archive mount pointed at `./.demo/data` (see [Configuration](../docs/configuration.md#mounting-your-archive)).
 
 Open [http://localhost:8862](http://localhost:8862).
 

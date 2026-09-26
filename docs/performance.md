@@ -49,7 +49,7 @@ Post images include `loading="lazy"` and `decoding="async"` after sanitization, 
 |----------|---------|--------|
 | `INDEX_WORKERS` | `4` | Parallel parsers for legacy HTML / tumblr-utils |
 
-Increasing workers helps CPU-bound index builds on multi-core hosts. Diminishing returns above ~8.
+Values above 4 are capped at 4. Lower it on small hosts to reduce CPU and memory use during index builds.
 
 ## Docker recommendations
 
